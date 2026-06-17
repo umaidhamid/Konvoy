@@ -1,72 +1,56 @@
-import axios, {
-AxiosError,
-AxiosResponse,
-InternalAxiosRequestConfig,
-} from "axios";
+import axios from "axios";
 
 const api = axios.create({
-baseURL: process.env.NEXT_PUBLIC_BACKEND_URL,
-withCredentials: true,
+  baseURL: process.env.NEXT_PUBLIC_BACKEND_URL,
+  withCredentials: true,
 });
 
 let isRefreshing = false;
+let failedQueue: Array<() => void> = [];
 
-let failedQueue: {
-resolve: (value?: AxiosResponse) => void;
-reject: (reason?: unknown) => void;
-}[] = [];
-
-const processQueue = (
-error: unknown = null,
-response?: AxiosResponse
-) => {
-failedQueue.forEach((promise) => {
-if (error) {
-promise.reject(error);
-} else {
-promise.resolve(response);
-}
-});
-
-failedQueue = [];
-};
 api.interceptors.response.use(
-(response) => response,
-async (error: AxiosError) => {
-const originalRequest = error.config as InternalAxiosRequestConfig & {
-_retry?: boolean;
-};
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
 
-const code = (error.response?.data as { code?: string })?.code;
+    if (
+      error.response?.status === 401 &&
+      (
+        error.response?.data?.code === "NO_ACCESS_TOKEN" ||
+        error.response?.data?.code === "ACCESS_TOKEN_EXPIRED"
+      ) &&
+      !originalRequest._retry
+    ) {
+      originalRequest._retry = true;
 
-if (
-  code === "ACCESS_TOKEN_EXPIRED" &&
-  !originalRequest._retry
-) {
-  originalRequest._retry = true;
+      if (isRefreshing) {
+        return new Promise((resolve) => {
+          failedQueue.push(() => resolve(api(originalRequest)));
+        });
+      }
 
-  try {
-    await api.post("/api/v1/auth/refresh");
+      isRefreshing = true;
 
-    return api(originalRequest);
-  } catch (err) {
-    window.location.href = "/login";
+      try {
+        await api.post("/auth/refresh-token");
 
-    return Promise.reject(err);
+        failedQueue.forEach((cb) => cb());
+        failedQueue = [];
+
+        return api(originalRequest);
+      } catch (err) {
+        if (typeof window !== "undefined") {
+          window.location.href = "/login";
+        }
+
+        return Promise.reject(err);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
+    return Promise.reject(error);
   }
-}
-
-if (
-  code === "REFRESH_TOKEN_EXPIRED" ||
-  code === "INVALID_REFRESH_TOKEN" ||
-  code === "NO_REFRESH_TOKEN"
-) {
-  window.location.href = "/login";
-}
-
-return Promise.reject(error);
-}
 );
-
 
 export default api;

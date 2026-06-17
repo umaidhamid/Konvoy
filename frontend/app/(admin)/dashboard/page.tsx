@@ -1,8 +1,19 @@
+"use client";
 import React from 'react';
 import Link from 'next/link';
 import { Folder, FileText, ArrowUpRight, Plus } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
+    const { user, loading } = useAuth();
+    const router = useRouter();
+    if (!loading && !user) {
+   router.push('/login');
+  }
+  if (loading) {
+    return <h1>Loading...</h1>;
+  }
   // Stat Card Config
   const stats = [
     { title: 'Projects', value: '8', icon: Folder },

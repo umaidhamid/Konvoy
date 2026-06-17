@@ -3,9 +3,8 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Shield, ShieldAlert, GitBranch, Terminal, Layers } from "lucide-react";
-import {Hero} from "@/components/client/herosection/page"
 
-
+import { useAuth } from "@/hooks/useAuth";
 // --- Real World, Minimalistic Features Section ---
 const Features = () => {
   const customFeatures = [
@@ -75,6 +74,8 @@ const Features = () => {
 
 // --- Page Wrapper Layout ---
 export default function Home() {
+
+
   return (
     <main className="min-h-screen bg-black text-white selection:bg-purple-500/30 antialiased font-sans">
       {/* Decorative Minimal Line Accent */}

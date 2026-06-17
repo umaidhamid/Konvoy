@@ -3,6 +3,8 @@ import { config } from "../config";
 
 interface TokenPayload {
   userId: string;
+  email: string;
+  role: "admin" | "user";
 }
 
 export const generateAccessToken = (payload: TokenPayload) => {

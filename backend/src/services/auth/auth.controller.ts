@@ -56,12 +56,17 @@ export const login = async (req: Request, res: Response) => {
         message: "Your account is not verified. Please verify your email.",
       });
     }
-    const accessToken = generateAccessToken({
+    const payload = {
       userId: user._id.toString(),
-    });
+      email: user.email!,
+      role: user.role as "user" | "admin",
+    };
+    const accessToken = generateAccessToken(payload);
 
     const refreshToken = generateRefreshToken({
       userId: user._id.toString(),
+      email: user.email!,
+      role: user.role as "user" | "admin",
     });
 
     await Session.create({
@@ -103,10 +108,12 @@ export const refresh = async (req: Request, res: Response) => {
       });
     }
 
-    let decoded: { userId: string };
+    let decoded: { userId: string; email: string; role: "user" | "admin" };
     try {
       decoded = jwt.verify(refreshToken, config.refreshTokenSecret) as {
         userId: string;
+        email: string;
+        role: "user" | "admin";
       };
     } catch (err) {
       // Clean up the stale cookie regardless of which JWT error this is
@@ -160,6 +167,8 @@ export const refresh = async (req: Request, res: Response) => {
 
     const newRefreshToken = generateRefreshToken({
       userId: decoded.userId,
+      email: decoded.email,
+      role: decoded.role,
     });
 
     await Session.create({
@@ -170,6 +179,8 @@ export const refresh = async (req: Request, res: Response) => {
 
     const newAccessToken = generateAccessToken({
       userId: decoded.userId,
+      email: decoded.email,
+      role: decoded.role,
     });
 
     res.cookie("accessToken", newAccessToken, ACCESS_TOKEN_COOKIE_OPTIONS);
