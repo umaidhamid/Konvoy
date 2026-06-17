@@ -1,47 +1,89 @@
-// app/auth/register/page.tsx
-import React from "react";
-import AuthSidebar from "@/components/auth/auth-sidebar";
-import RegisterForm from "./register-form";
+"use client";
 
-function RegisterGraphic() {
-  return (
-    <svg className="h-full w-full max-h-48 object-contain" viewBox="0 0 320 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="reg-grad" x1="0" y1="0" x2="130" y2="90">
-          <stop offset="0%" stopColor="#10b981" stopOpacity="0.3"/>
-          <stop offset="100%" stopColor="#059669" stopOpacity="0.01"/>
-        </linearGradient>
-      </defs>
-      <path d="M60,120 L120,70 L200,150 L260,90" stroke="rgba(16, 185, 129, 0.2)" strokeWidth="2" strokeLinecap="round"/>
-      <circle cx="120" cy="70" r="8" fill="#10b981" fillOpacity="0.2" stroke="#10b981" strokeWidth="2"/>
-      <circle cx="200" cy="150" r="5" fill="currentColor" className="text-muted-foreground" opacity="0.2"/>
-      
-      <g filter="drop-shadow(0px 12px 24px rgba(0,0,0,0.06))">
-        <rect x="105" y="55" width="140" height="95" rx="18" fill="rgb(var(--card))" stroke="rgba(16, 185, 129, 0.25)" strokeWidth="1.5"/>
-        <rect x="105" y="55" width="45" height="95" rx="18" fill="url(#reg-grad)"/>
-        <circle cx="175" cy="90" r="15" fill="currentColor" className="text-muted" stroke="currentColor" className="text-border" strokeWidth="1"/>
-        <path d="M162 116 C162 106 170 104 175 104 C180 104 188 106 188 116" fill="currentColor" className="text-muted"/>
-        <rect x="123" y="122" width="40" height="4" rx="2" fill="#10b981" opacity="0.6"/>
-        <circle cx="220" cy="78" r="3.5" fill="#10b981"/>
-      </g>
-    </svg>
-  );
-}
+import { useState } from 'react';
 
 export default function RegisterPage() {
+  const [formData, setFormData] = useState({
+    fullName: '',
+    username: '',
+    phone: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Form Submitted:", formData);
+  };
+
   return (
-    <>
-      <AuthSidebar 
-        themeColor="emerald"
-        graphic={<RegisterGraphic />}
-        heading="Start your journey"
-        description="Set up a production-ready system identity configuration equipped with custom security parameters and cryptographic architecture templates."
-      />
-      <div className="flex w-full flex-col justify-center px-6 py-12 md:w-1/2 md:p-12 lg:p-16 bg-card/30 backdrop-blur-md">
-        <div className="mx-auto w-full max-w-[360px]">
-          <RegisterForm />
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 py-12 px-4">
+      <div className="w-full max-w-lg bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+        <div className="mb-8 text-center">
+          <h2 className="text-2xl font-bold text-slate-900">Create an Account</h2>
+          <p className="text-slate-500 mt-2">Join us today and start your journey</p>
         </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Full Name */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+            <input 
+              name="fullName"
+              type="text"
+              required
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+              onChange={handleChange}
+            />
+          </div>
+
+          {/* Username & Phone */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Username</label>
+              <input name="username" type="text" required className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" onChange={handleChange} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Phone</label>
+              <input name="phone" type="tel" required className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" onChange={handleChange} />
+            </div>
+          </div>
+
+          {/* Email */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
+            <input name="email" type="email" required className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" onChange={handleChange} />
+          </div>
+
+          {/* Password & Confirm */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+              <input name="password" type="password" required className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" onChange={handleChange} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Confirm Password</label>
+              <input name="confirmPassword" type="password" required className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" onChange={handleChange} />
+            </div>
+          </div>
+
+          <button 
+            type="submit"
+            className="w-full bg-slate-900 text-white font-semibold py-3 rounded-lg hover:bg-slate-800 transition mt-4"
+          >
+            Register Now
+          </button>
+        </form>
+
+        <p className="mt-6 text-center text-sm text-slate-600">
+          Already have an account? <a href="/login" className="text-blue-600 font-semibold">Sign in</a>
+        </p>
       </div>
-    </>
+    </div>
   );
 }

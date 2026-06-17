@@ -1,43 +1,105 @@
-// app/auth/login/page.tsx
-import React from "react";
-import AuthSidebar from "@/components/auth/auth-sidebar";
-import LoginForm from "./login-form";
+"use client";
 
-function LoginGraphic() {
-  return (
-    <svg className="h-full w-full max-h-48 object-contain" viewBox="0 0 320 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="login-grad" x1="0" y1="0" x2="320" y2="200">
-          <stop offset="0%" stopColor="rgb(59, 130, 246)" stopOpacity="0.4"/>
-          <stop offset="100%" stopColor="rgb(99, 102, 241)" stopOpacity="0.02"/>
-        </linearGradient>
-      </defs>
-      <rect x="20" y="40" width="280" height="130" rx="20" fill="url(#login-grad)" stroke="rgba(59, 130, 246, 0.15)" strokeWidth="1.5"/>
-      <rect x="44" y="68" width="110" height="10" rx="5" fill="currentColor" className="text-foreground" opacity="0.15"/>
-      <rect x="44" y="88" width="70" height="8" rx="4" fill="currentColor" className="text-foreground" opacity="0.08"/>
-      <circle cx="215" cy="105" r="48" fill="rgb(var(--card))" stroke="rgba(59, 130, 246, 0.2)" strokeWidth="1"/>
-      <circle cx="215" cy="105" r="34" fill="rgb(59, 130, 246)" fillOpacity="0.06"/>
-      <path d="M203 106 V95 C203 88.4 208.4 83 215 83 C221.6 83 227 88.4 227 95 V106" stroke="rgb(59, 130, 246)" strokeWidth="3" strokeLinecap="round"/>
-      <rect x="196" y="106" width="38" height="28" rx="8" fill="rgb(var(--card))" stroke="rgb(59, 130, 246)" strokeWidth="3"/>
-      <circle cx="215" cy="118" r="3.5" fill="rgb(59, 130, 246)"/>
-    </svg>
-  );
-}
-
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { authService } from "@/service/auth.service";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
+import  AuthProvider  from "@/context/AuthProvider";
 export default function LoginPage() {
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const [formData, setFormData] = useState({ email: "umaid@example.com", password: "Password@123" });
+  const { setUser } = useAuth();
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    try {
+    setIsLoading(true);
+    // Add your auth logic here
+    setTimeout(() => setIsLoading(false), 2000);
+    console.log("Form Submitted:", formData);
+  const response =  await authService.login(formData.email, formData.password);
+    toast.success("Login successful");
+    console.log("Response:", response);
+    setUser(response.user);
+    router.push("/dashboard");
+    } catch (error) {
+      console.error("Login failed:", error);
+      toast.error("Login failed");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <>
-      <AuthSidebar 
-        themeColor="primary"
-        graphic={<LoginGraphic />}
-        heading="Welcome back partner"
-        description="Log in to access your secure personalized dashboard, manage critical business analytics, and review active system integrity profiles."
-      />
-      <div className="flex w-full flex-col justify-center px-6 py-12 md:w-1/2 md:p-12 lg:p-16 bg-card/30 backdrop-blur-md">
-        <div className="mx-auto w-full max-w-[360px]">
-          <LoginForm />
-        </div>
-      </div>
-    </>
+    <div className="flex min-h-screen items-center justify-center bg-zinc-50 p-4">
+      <Card className="w-full max-w-sm border-zinc-200 shadow-lg">
+        <CardHeader className="space-y-1 text-center">
+          <CardTitle className="text-2xl font-bold">Sign In</CardTitle>
+          <CardDescription>
+            Enter your credentials to access your account
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" placeholder="name@example.com" required value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                <button type="button" className="text-xs text-blue-600 hover:underline">
+                  Forgot password?
+                </button>
+              </div>
+              <div className="relative">
+                <Input 
+                  id="password" 
+                  type={showPassword ? "text" : "password"} 
+                  placeholder="••••••••" 
+                  required 
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-2.5 text-zinc-400 hover:text-zinc-600"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            <Button className="w-full" disabled={isLoading}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isLoading ? "Signing in..." : "Sign In"}
+            </Button>
+          </form>
+
+          <div className="mt-4 text-center text-sm text-zinc-500">
+            Don&apos;t have an account?{" "}
+            <a href="/register" className="font-semibold text-blue-600 hover:underline">
+              Sign up
+            </a>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
