@@ -2,14 +2,14 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
-
+import { config } from "./config";
 import authRoutes from "./services/auth/auth.routes";
 
 const app = express();
 
 app.use(
 cors({
-origin: process.env.FRONTEND_URL,
+origin: config.FRONTEND_URL,
 credentials: true,
 })
 );
@@ -26,6 +26,6 @@ message: "API is running",
 });
 });
 
-app.use("/api/auth", authRoutes);
+app.use("/api/v1/auth", authRoutes);
 
 export default app;

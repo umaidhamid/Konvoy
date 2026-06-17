@@ -12,7 +12,7 @@ interface JwtPayload {
 export const authMiddleware = (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const accessToken = req.cookies.accessToken;
@@ -20,22 +20,32 @@ export const authMiddleware = (
     if (!accessToken) {
       return res.status(401).json({
         success: false,
+        code: "NO_ACCESS_TOKEN",
         message: "Unauthorized",
       });
     }
 
     const decoded = jwt.verify(
       accessToken,
-      process.env.ACCESS_TOKEN_SECRET!
+      process.env.ACCESS_TOKEN_SECRET!,
     ) as JwtPayload;
 
     req.userId = decoded.userId;
 
     next();
   } catch (error) {
+    if (error instanceof jwt.TokenExpiredError) {
+      return res.status(401).json({
+        success: false,
+        code: "ACCESS_TOKEN_EXPIRED",
+        message: "Access token expired",
+      });
+    }
+
     return res.status(401).json({
       success: false,
-      message: "Invalid token",
+      code: "INVALID_ACCESS_TOKEN",
+      message: "Invalid access token",
     });
   }
 };
