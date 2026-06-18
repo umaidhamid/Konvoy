@@ -9,7 +9,7 @@ export default function DashboardPage() {
     const { user, loading } = useAuth();
     const router = useRouter();
     if (!loading && !user) {
-   router.push('/login');
+   router.push('/auth/login');
   }
   if (loading) {
     return <h1>Loading...</h1>;

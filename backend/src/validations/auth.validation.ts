@@ -21,12 +21,6 @@ fullname: z
 .trim()
 .min(3, "Name must be at least 3 characters")
 .max(50),
-username: z
-.string()
-.trim()
-.min(3, "Username must be at least 3 characters")
-.max(50),
-
 email: z
   .string()
   .trim()

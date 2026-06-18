@@ -3,7 +3,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Shield, ShieldAlert, GitBranch, Terminal, Layers } from "lucide-react";
-
+import {Hero} from "@/components/client/herosection/page"
 import { useAuth } from "@/hooks/useAuth";
 // --- Real World, Minimalistic Features Section ---
 const Features = () => {

@@ -16,33 +16,59 @@ import { authService } from "@/service/auth.service";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import  AuthProvider  from "@/context/AuthProvider";
-export default function LoginPage() {
+import  {AuthProvider}  from "@/context/AuthProvider";
+import api from "@/lib/api";
+export default function LoginPage() { 
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const [formData, setFormData] = useState({ email: "umaid@example.com", password: "Password@123" });
   const { setUser } = useAuth();
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    try {
-    setIsLoading(true);
-    // Add your auth logic here
-    setTimeout(() => setIsLoading(false), 2000);
-    console.log("Form Submitted:", formData);
-  const response =  await authService.login(formData.email, formData.password);
+const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
+  setIsLoading(true);
+
+  try {
+    const response = await authService.login(formData.email, formData.password);
     toast.success("Login successful");
-    console.log("Response:", response);
     setUser(response.user);
     router.push("/dashboard");
-    } catch (error) {
-      console.error("Login failed:", error);
-      toast.error("Login failed");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  } catch (error: any) {
+    // Extract error code from response
+    const errorCode = error?.response?.data?.code;
+    const errorMessage = error?.response?.data?.message || "Login failed";
+
+   if (errorCode === "ACCOUNT_NOT_VERIFIED") {
+  toast.error(errorMessage, {
+    duration: 6000,
+    action: {
+      label: "Verify Account",
+      onClick: async () => {
+        try {
+          const res = await api.post("/auth/resend-verification", {
+            email: formData.email,
+          });
+
+          toast.success(
+            res.data.message || "Verification email sent successfully"
+          );
+        } catch (error: any) {
+          toast.error(
+            error.response?.data?.message ||
+              "Failed to send verification email"
+          );
+        }
+      },
+    },
+  });
+} else {
+  toast.error(errorMessage);
+}
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 p-4">
@@ -63,7 +89,7 @@ export default function LoginPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <button type="button" className="text-xs text-blue-600 hover:underline">
+                <button   onClick={() => router.push("/auth/forgot")} type="button" className="text-xs text-blue-600 hover:underline">
                   Forgot password?
                 </button>
               </div>
@@ -94,7 +120,7 @@ export default function LoginPage() {
 
           <div className="mt-4 text-center text-sm text-zinc-500">
             Don&apos;t have an account?{" "}
-            <a href="/register" className="font-semibold text-blue-600 hover:underline">
+            <a href="/auth/register" className="font-semibold text-blue-600 hover:underline">
               Sign up
             </a>
           </div>

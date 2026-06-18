@@ -9,9 +9,9 @@ import Link from "next/link";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-   <AuthProvider>
+<div>
         {/* Dynamic Inner Panel Routing Target Slot */}
         {children}
-   </AuthProvider>
+   </div>
   );
 }

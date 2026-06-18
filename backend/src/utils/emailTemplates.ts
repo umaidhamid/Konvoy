@@ -76,4 +76,55 @@ export const forgotPasswordEmailTemplate = (
       </div>
     `,
   };
+};
+export const forgotPasswordTemplate = (
+  fullname: string,
+  resetLink: string
+) => {
+  return {
+    subject: "Reset Your Password",
+    html: `
+      <div style="max-width:600px;margin:auto;font-family:Arial,sans-serif;padding:40px;color:#333">
+        <h2>Password Reset Request</h2>
+
+        <p>Hello <strong>${fullname}</strong>,</p>
+
+        <p>
+          We received a request to reset your password.
+          Click the button below to create a new password.
+        </p>
+
+        <div style="margin:30px 0">
+          <a
+            href="${resetLink}"
+            style="
+              background:#111827;
+              color:white;
+              padding:14px 28px;
+              text-decoration:none;
+              border-radius:8px;
+              display:inline-block;
+              font-weight:600;
+            "
+          >
+            Reset Password
+          </a>
+        </div>
+
+        <p>
+          This link will expire in <strong>15 minutes</strong>.
+        </p>
+
+        <p>
+          If you didn't request a password reset, you can safely ignore this email.
+        </p>
+
+        <hr />
+
+        <p style="font-size:13px;color:#666">
+          For security reasons, never share your password or recovery code with anyone.
+        </p>
+      </div>
+    `,
+  };
 };  
