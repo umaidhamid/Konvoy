@@ -33,7 +33,21 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         {children}
-        <Toaster  />
+      <Toaster 
+  position="top-right" 
+  expand={false} 
+  richColors={false} // Keeps it clean and monochrome to match your design
+  toastOptions={{
+    style: {
+      background: '#ffffff',
+      color: '#0f172a', // slate-900
+      border: '1px solid #e2e8f0', // slate-200
+      borderRadius: '12px',
+      padding: '16px',
+      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+    },
+  }}
+/>
       </body>
     </html>
   );

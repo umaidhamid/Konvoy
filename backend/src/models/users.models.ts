@@ -1,19 +1,15 @@
 // models/User.ts
 
 import mongoose from "mongoose";
-import { boolean, string } from "zod";
-
-const userSchema = new mongoose.Schema({
+const userSchema = new mongoose.Schema(
+{
   fullname: String,
 
-  username: {
+  email: {
     type: String,
+    lowercase: true,
     unique: true,
-    sparse: true,
-    trim: true,
   },
-
-  email: String,
 
   passwordHash: String,
 
@@ -33,26 +29,14 @@ const userSchema = new mongoose.Schema({
     default: false,
   },
 
- verificationToken: {
-  type: String,
-},
+  // Email verification
+  verificationToken: String,
+  verificationTokenExpiresAt: Date,
 
-verificationTokenExpiresAt: {
-  type: Date,
-},
+  // Forgot password
+  resetPasswordToken: String,
+  resetPasswordTokenExpiresAt: Date,
 
-resetPasswordOtp: {
-  type: String,
-},
-
-resetPasswordOtpExpiresAt: {
-  type: Date,
-},
-
-resetPasswordOtpUsed: {
-  type: Boolean,
-  default: false,
-},
   lastLoginAt: Date,
 
   refreshToken: {
@@ -62,13 +46,17 @@ resetPasswordOtpUsed: {
 
   phoneNumber: String,
 
+  // Emergency account recovery
   recoveryCode: {
-    code: String,
+    code: {
+      type: String,
+      select: false,
+    },
+
     used: {
       type: Boolean,
       default: false,
     },
-    expiresAt: Date,
   },
 
   isDeactivated: {
@@ -78,14 +66,14 @@ resetPasswordOtpUsed: {
 
   deactivationNote: String,
 
-    notifications: {
-      type: Boolean,
-      default: true,
-    },
+  notifications: {
+    type: Boolean,
+    default: true,
   },
+},
 {
-    timestamps: true,
-  },
+  timestamps: true,
+}
 );
 
 export default mongoose.model("User", userSchema);

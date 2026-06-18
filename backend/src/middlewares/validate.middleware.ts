@@ -17,15 +17,15 @@ query: req.query,
 
   next();
 } catch (error) {
-  if (error instanceof ZodError) {
-    return res.status(400).json({
-      success: false,
-      errors: error.errors.map((err) => ({
-        field: err.path.join("."),
-        message: err.message,
-      })),
-    });
-  }
+if (error instanceof ZodError) {
+  return res.status(400).json({
+    success: false,
+    errors: error.issues.map((err) => ({
+      field: err.path.join("."),
+      message: err.message,
+    })),
+  });
+}
 
   return res.status(500).json({
     success: false,

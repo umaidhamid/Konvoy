@@ -1,16 +1,19 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-
+import { createRecoveryCode } from "../../utils/recoveryCode";
 import User from "../../models/users.models";
 import Session from "../../models/Session";
 import crypto from "crypto";
 import { generateAccessToken, generateRefreshToken } from "../../utils/jwt";
 
 import { hashToken } from "../../utils/hashToken";
-import { verificationEmailTemplate } from "../../utils/emailTemplates";
+import {
+  verificationEmailTemplate,
+  forgotPasswordTemplate,
+} from "../../utils/emailTemplates";
 import { sendEmail } from "../../utils/sendEmail";
-
+import { hashPassword, comparePassword } from "../../utils/password";
 import {
   ACCESS_TOKEN_COOKIE_OPTIONS,
   REFRESH_TOKEN_COOKIE_OPTIONS,
@@ -18,6 +21,7 @@ import {
 } from "../../config/auth.config";
 import { config } from "../../config";
 import { AuthRequest } from "../../middlewares/auth.middleware";
+import { codec } from "zod";
 
 export const login = async (req: Request, res: Response) => {
   try {
@@ -41,7 +45,7 @@ export const login = async (req: Request, res: Response) => {
         message: "User password not found",
       });
     }
-    const isPasswordCorrect = await bcrypt.compare(
+    const isPasswordCorrect = await comparePassword(
       password,
       user.passwordHash!,
     );
@@ -53,6 +57,7 @@ export const login = async (req: Request, res: Response) => {
     }
     if (!user.isVerified) {
       return res.status(401).json({
+        code: "ACCOUNT_NOT_VERIFIED",
         message: "Your account is not verified. Please verify your email.",
       });
     }
@@ -222,7 +227,7 @@ export const logout = async (req: Request, res: Response) => {
 
 export const register = async (req: Request, res: Response) => {
   try {
-    const { fullname, username, phoneNumber, email, password } = req.body;
+    const { fullname, phoneNumber, email, password } = req.body;
 
     const normalizedEmail = String(email).toLowerCase();
 
@@ -233,27 +238,31 @@ export const register = async (req: Request, res: Response) => {
         .json({ success: false, message: "Email already exists" });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 12);
+    const hashedPassword = await hashPassword(password);
     const verificationToken = crypto.randomBytes(32).toString("hex");
+    const { code, hash: hashedCode } = await createRecoveryCode();
     const verificationTokenExpiresAt = new Date(
       Date.now() + 24 * 60 * 60 * 1000, // 24 hours
     );
 
     const user = await User.create({
       fullname,
-      username,
       email: normalizedEmail,
       passwordHash: hashedPassword,
       phoneNumber,
       verificationToken,
       verificationTokenExpiresAt,
+      recoveryCode: {
+        code: hashedCode,
+        used: false,
+      },
       isVerified: false,
     });
 
-    const verificationLink = `${config.FRONTEND_URL}/verify-email/${verificationToken}`;
+    const verificationLink = `${config.FRONTEND_URL}/verify-email?token=${verificationToken}&email=${normalizedEmail}`;
 
     const mail = verificationEmailTemplate(
-      user.username as string,
+      user.fullname as string,
       verificationLink,
     );
 
@@ -276,8 +285,9 @@ export const register = async (req: Request, res: Response) => {
         id: user._id,
         fullname: user.fullname,
         email: user.email,
+        verificationLink,
+        recoveryCode: code,
       },
-      verificationLink,
     });
   } catch (error) {
     console.error(error);
@@ -287,11 +297,10 @@ export const register = async (req: Request, res: Response) => {
     });
   }
 };
-
 export const isAuth = async (req: AuthRequest, res: Response) => {
   try {
     const user = await User.findById(req.userId).select(
-      "_id fullname username email isVerified isDeactivated",
+      "_id fullname email isVerified isDeactivated",
     );
 
     if (!user) {
@@ -315,7 +324,6 @@ export const isAuth = async (req: AuthRequest, res: Response) => {
       user: {
         id: user._id,
         fullname: user.fullname,
-        username: user.username,
         email: user.email,
       },
     });
@@ -323,6 +331,316 @@ export const isAuth = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({
       success: false,
       code: "INTERNAL_SERVER_ERROR",
+      message: "Internal server error",
+    });
+  }
+};
+export const forgotPassword = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
+
+    const user = await User.findOne({
+      email: email.toLowerCase(),
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    if (!user.isVerified) {
+      return res.status(401).json({
+        success: false,
+        message: "Account is not verified",
+      });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString("hex");
+
+    user.resetPasswordToken = resetToken;
+
+    user.resetPasswordTokenExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+    await user.save();
+
+    const resetLink = `${config.FRONTEND_URL}/reset-password/${resetToken}`;
+
+    const mail = forgotPasswordTemplate(user.fullname as string, resetLink);
+
+    await sendEmail({
+      to: user.email!,
+      subject: mail.subject,
+      html: mail.html,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Password reset link sent successfully",
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+export const resendverifytoken = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
+
+    const user = await User.findOne({
+      email: email.toLowerCase(),
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+    if (
+      user.verificationTokenExpiresAt 
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: `Verification token has already sended on mail ${user.email}`,
+      });
+    }
+    if (user.isVerified) {
+      return res.status(400).json({
+        success: false,
+        message: "Account is already verified",
+      });
+    }
+
+    const newVerificationToken = crypto.randomBytes(32).toString("hex");
+
+    user.verificationToken = newVerificationToken;
+
+    user.verificationTokenExpiresAt = new Date(
+      Date.now() + 24 * 60 * 60 * 1000,
+    );
+
+    await user.save();
+
+    const verificationLink = `${config.FRONTEND_URL}/verify-email/${newVerificationToken}&email=${user.email}`;
+
+    const mail = verificationEmailTemplate(
+      user.fullname as string,
+      verificationLink,
+    );
+
+    await sendEmail({
+      to: user.email!,
+      subject: mail.subject,
+      html: mail.html,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Verification link sent successfully",
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+export const verifyAccount = async (req: Request, res: Response) => {
+  try {
+    const { token, email } = req.body;
+
+    if (!token || !email) {
+      return res.status(400).json({
+        success: false,
+        message: "Token and email are required",
+      });
+    }
+
+    const normalizedEmail = String(email).trim().toLowerCase();
+
+    const user = await User.findOne({
+      email: normalizedEmail,
+      verificationToken: token,
+    });
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid verification link",
+      });
+    }
+
+    if (user.isDeactivated) {
+      return res.status(403).json({
+        success: false,
+        message: "Account is deactivated. Please contact support.",
+      });
+    }
+
+    if (user.isVerified) {
+      return res.status(409).json({
+        success: false,
+        message: "Account is already verified",
+      });
+    }
+
+    if (
+      !user.verificationTokenExpiresAt ||
+      user.verificationTokenExpiresAt.getTime() < Date.now()
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Verification link has expired",
+      });
+    }
+
+    user.isVerified = true;
+    user.verificationToken = undefined;
+    user.verificationTokenExpiresAt = undefined;
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Account verified successfully",
+    });
+  } catch (error) {
+    console.error("Verify account error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+export const recoveryAccount = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { email, recoveryCode } = req.body;
+
+    if (!email || !recoveryCode) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and recovery code are required",
+      });
+    }
+
+    const normalizedEmail = String(email)
+      .trim()
+      .toLowerCase();
+
+    const user = await User.findOne({
+      email: normalizedEmail,
+    }).select("+recoveryCode.code");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    if (user.isDeactivated) {
+      return res.status(403).json({
+        success: false,
+        message: "Account is deactivated",
+      });
+    }
+
+    if (!user.isVerified) {
+      return res.status(403).json({
+        success: false,
+        message: "Account is not verified",
+      });
+    }
+
+    if (!user.recoveryCode?.code) {
+      return res.status(400).json({
+        success: false,
+        message: "Recovery code not available",
+      });
+    }
+
+    if (user.recoveryCode.used) {
+      return res.status(400).json({
+        success: false,
+        message: "Recovery code has already been used",
+      });
+    }
+
+    const isValidCode = await bcrypt.compare(
+      recoveryCode,
+      user.recoveryCode.code
+    );
+
+    if (!isValidCode) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid recovery code",
+      });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString("hex");
+
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordTokenExpiresAt = new Date(
+      Date.now() + 60 * 60 * 1000
+    );
+
+    const resetLink =
+      `${config.FRONTEND_URL}/reset-password?token=${resetToken}&email=${encodeURIComponent(user.email!)}`;
+
+    const mail = forgotPasswordTemplate(
+      user.fullname as string,
+      resetLink
+    );
+
+    await sendEmail({
+      to: user.email!,
+      subject: mail.subject,
+      html: mail.html,
+    });
+
+    // Mark recovery code as used only after successful email delivery
+    user.recoveryCode.used = true;
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password reset link sent successfully",
+    });
+  } catch (error) {
+    console.error("Recovery account error:", error);
+
+    return res.status(500).json({
+      success: false,
       message: "Internal server error",
     });
   }
