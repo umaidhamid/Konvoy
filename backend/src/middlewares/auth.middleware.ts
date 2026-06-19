@@ -2,11 +2,17 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
 export interface AuthRequest extends Request {
-  userId?: string;
+  user?: {
+    userId: string;
+    role: string;
+    email: string;
+  };
 }
 
 interface JwtPayload {
   userId: string;
+  role: string;
+  email: string;
 }
 
 export const authMiddleware = (
@@ -30,7 +36,7 @@ export const authMiddleware = (
       process.env.ACCESS_TOKEN_SECRET!,
     ) as JwtPayload;
 
-    req.userId = decoded.userId;
+    req.user = { userId: decoded.userId, role: decoded.role, email: decoded.email };
 
     next();
   } catch (error) {

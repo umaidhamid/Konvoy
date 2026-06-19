@@ -1,7 +1,9 @@
 import { Request, Response } from "express";
-import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { createRecoveryCode } from "../../utils/recoveryCode";
+import {
+  createRecoveryCode,
+  verifyRecoveryCode,
+} from "../../utils/recoveryCode";
 import User from "../../models/users.models";
 import Session from "../../models/Session";
 import crypto from "crypto";
@@ -21,7 +23,6 @@ import {
 } from "../../config/auth.config";
 import { config } from "../../config";
 import { AuthRequest } from "../../middlewares/auth.middleware";
-import { codec } from "zod";
 
 export const login = async (req: Request, res: Response) => {
   try {
@@ -372,7 +373,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
     await user.save();
 
-    const resetLink = `${config.FRONTEND_URL}/reset-password/${resetToken}`;
+    const resetLink = `${config.FRONTEND_URL}/auth/forgot-password?token=${resetToken}&email=${user.email}`;
 
     const mail = forgotPasswordTemplate(user.fullname as string, resetLink);
 
@@ -385,6 +386,75 @@ export const forgotPassword = async (req: Request, res: Response) => {
     return res.status(200).json({
       success: true,
       message: "Password reset link sent successfully",
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+export const changePassword = async (req: AuthRequest, res: Response) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Current password and new password are required",
+      });
+    }
+
+    const user = await User.findById(userId).select("+passwordHash");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const isPasswordCorrect = await comparePassword(
+      currentPassword,
+      user.passwordHash!,
+    );
+
+    if (!isPasswordCorrect) {
+      return res.status(400).json({
+        success: false,
+        message: "Current password is incorrect",
+      });
+    }
+
+    const isSamePassword = await comparePassword(
+      newPassword,
+      user.passwordHash!,
+    );
+
+    if (isSamePassword) {
+      return res.status(400).json({
+        success: false,
+        message: "New password cannot be the same as current password",
+      });
+    }
+
+    user.passwordHash = await hashPassword(newPassword);
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password changed successfully",
     });
   } catch (error) {
     console.error(error);
@@ -416,9 +486,7 @@ export const resendverifytoken = async (req: Request, res: Response) => {
         message: "User not found",
       });
     }
-    if (
-      user.verificationTokenExpiresAt 
-    ) {
+    if (user.verificationTokenExpiresAt) {
       return res.status(400).json({
         success: false,
         message: `Verification token has already sended on mail ${user.email}`,
@@ -537,23 +605,18 @@ export const verifyAccount = async (req: Request, res: Response) => {
   }
 };
 
-export const recoveryAccount = async (
-  req: Request,
-  res: Response
-) => {
+export const recoveryAccount = async (req: Request, res: Response) => {
   try {
-    const { email, recoveryCode } = req.body;
+    const { email, token: recoveryCode, newPassword } = req.body;
 
-    if (!email || !recoveryCode) {
+    if (!email || !recoveryCode || !newPassword) {
       return res.status(400).json({
         success: false,
-        message: "Email and recovery code are required",
+        message: "Email, recovery code and new password are required",
       });
     }
 
-    const normalizedEmail = String(email)
-      .trim()
-      .toLowerCase();
+    const normalizedEmail = String(email).trim().toLowerCase();
 
     const user = await User.findOne({
       email: normalizedEmail,
@@ -569,35 +632,36 @@ export const recoveryAccount = async (
     if (user.isDeactivated) {
       return res.status(403).json({
         success: false,
-        message: "Account is deactivated",
+        message:
+          "Account is deactivated sorry for the inconvenience contact support",
       });
     }
 
     if (!user.isVerified) {
       return res.status(403).json({
         success: false,
-        message: "Account is not verified",
+        message: "Account is not verified please verify your account first",
       });
     }
 
     if (!user.recoveryCode?.code) {
       return res.status(400).json({
         success: false,
-        message: "Recovery code not available",
+        message: "Recovery code not available please request a new one",
       });
     }
 
     if (user.recoveryCode.used) {
       return res.status(400).json({
         success: false,
-        message: "Recovery code has already been used",
+        message: "Recovery code has already been used please request a new one",
       });
     }
-
-    const isValidCode = await bcrypt.compare(
-      recoveryCode,
-      user.recoveryCode.code
-    );
+    const cleanedCode = recoveryCode.trim().replace(/\s+/g, "");
+    const isValidCode = await verifyRecoveryCode({
+      code: cleanedCode,
+      hash: user.recoveryCode.code,
+    });
 
     if (!isValidCode) {
       return res.status(400).json({
@@ -606,38 +670,83 @@ export const recoveryAccount = async (
       });
     }
 
-    const resetToken = crypto.randomBytes(32).toString("hex");
+    user.passwordHash = await hashPassword(newPassword);
 
-    user.resetPasswordToken = resetToken;
-    user.resetPasswordTokenExpiresAt = new Date(
-      Date.now() + 60 * 60 * 1000
-    );
-
-    const resetLink =
-      `${config.FRONTEND_URL}/reset-password?token=${resetToken}&email=${encodeURIComponent(user.email!)}`;
-
-    const mail = forgotPasswordTemplate(
-      user.fullname as string,
-      resetLink
-    );
-
-    await sendEmail({
-      to: user.email!,
-      subject: mail.subject,
-      html: mail.html,
-    });
-
-    // Mark recovery code as used only after successful email delivery
     user.recoveryCode.used = true;
 
     await user.save();
 
     return res.status(200).json({
       success: true,
-      message: "Password reset link sent successfully",
+      message: "Password reset successful",
     });
   } catch (error) {
     console.error("Recovery account error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const { token, newPassword, email } = req.body;
+
+    if (!token || !newPassword || !email) {
+      return res.status(400).json({
+        success: false,
+        message: "Token, email, and new password are required",
+      });
+    }
+
+    const user = await User.findOne({
+      email: email,
+      resetPasswordToken: token,
+    }).select("+resetPasswordToken");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Invalid credentials",
+      });
+    }
+
+    if (user.isDeactivated) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "Account is deactivated sorry for the inconvenience contact support",
+      });
+    }
+
+    if (!user.isVerified) {
+      return res.status(403).json({
+        success: false,
+        message: "Account is not verified please verify your account first",
+      });
+    }
+    if (
+      !user.resetPasswordTokenExpiresAt ||
+      user.resetPasswordTokenExpiresAt.getTime() < Date.now()
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Reset link has expired",
+      });
+    }
+    user.resetPasswordToken = undefined;
+    user.resetPasswordTokenExpiresAt = undefined;
+    user.passwordHash = await hashPassword(newPassword);
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password reset successful",
+    });
+  } catch (error) {
+    console.error("Reset password error:", error);
 
     return res.status(500).json({
       success: false,

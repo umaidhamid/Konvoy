@@ -13,6 +13,6 @@ export const createRecoveryCode = async () => {
   };
 };
 
-export const verifyRecoveryCode = async (code: string, hash: string) => {
+export const verifyRecoveryCode = async ({ code, hash }: { code: string; hash: string }) => {
   return bcrypt.compare(code, hash) as Promise<boolean>;
 };

@@ -1,8 +1,8 @@
 import api from "@/lib/api";
-
+const baseUrl = "/auth";
 export const authService = {
   login: async (email: string, password: string) => {
-    const response = await api.post("/auth/login", { email, password });
+    const response = await api.post(`${baseUrl}/login`, { email, password });
     return response.data;
   },
   register: async (
@@ -11,7 +11,7 @@ export const authService = {
     email: string,
     password: string,
   ) => {
-    const response = await api.post("/auth/register", {
+    const response = await api.post(`${baseUrl}/register`, {
       fullname,
       phoneNumber,
       email,
@@ -21,15 +21,23 @@ export const authService = {
     return response.data;
   },
   isAuth: async () => {
-    const response = await api.get("/auth/is-auth");
+    const response = await api.get(`${baseUrl}/is-auth`);
     return response.data;
   },
   logout: async () => {
-    const response = await api.post("/auth/logout");
+    const response = await api.post(`${baseUrl}/logout`);
     return response.data;
   },
   forgotPassword: async (email: string) => {
-    const response = await api.post("/auth/forgot-password", { email });
+    const response = await api.post(`${baseUrl}/forgot-password`, { email });
     return response.data;
-  },  
+  }, 
+  recoverAccount: async (email: string, token: string, newPassword: string) => {
+    const response = await api.post(`${baseUrl}/recover-account`, { email, token, newPassword });
+    return response.data;
+  }, 
+  resetPassword: async (token: string, newPassword: string,email:string) => {
+    const response = await api.post(`${baseUrl}/reset-password`, { token, newPassword,email });
+    return response.data;
+  }, 
 };
