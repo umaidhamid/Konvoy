@@ -9,7 +9,9 @@ import {
   forgotPassword,
   resendverifytoken,
   verifyAccount,
-  recoveryaccount
+  recoveryAccount,
+  resetPassword,
+  changePassword
 } from "./auth.controller";
 
 import { validate } from "../../middlewares/validate.middleware";
@@ -22,7 +24,6 @@ const router = express.Router();
 router.post("/login", validate(loginSchema), login);
 
 router.post("/refresh", refresh);
-router.post("/refresh-token", refresh);
 
 router.post("/logout", logout);
 router.post("/register", validate(registerSchema), register);
@@ -30,6 +31,7 @@ router.get("/is-auth", authMiddleware, isAuth);
 router.post("/forgot-password", forgotPassword);
 router.post("/resend-verification", resendverifytoken);
 router.post("/verify-account",verifyAccount)
-router.post("recovery-account",recoveryaccount)
-
+router.post("/recover-account",recoveryAccount)
+router.post("/reset-password",resetPassword)
+router.get("/change-password", authMiddleware, changePassword)
 export default router;

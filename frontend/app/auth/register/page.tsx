@@ -93,7 +93,7 @@ export default function RegisterPage() {
 
             <div className="bg-slate-900 text-white p-4 rounded-xl text-center text-2xl font-mono tracking-widest mb-6">
               {recoveryData.recoveryCode}
-              {/* {console.log(recoveryData)} */}
+           
             </div>
 
             <div className="flex gap-2">

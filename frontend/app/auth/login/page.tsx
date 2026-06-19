@@ -89,7 +89,7 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <button   onClick={() => router.push("/auth/forgot")} type="button" className="text-xs text-blue-600 hover:underline">
+                <button   onClick={() => router.push("/auth/forgot-password")} type="button" className="text-xs text-blue-600 hover:underline">
                   Forgot password?
                 </button>
               </div>
