@@ -103,6 +103,8 @@ export const login = async (req: Request, res: Response) => {
 };
 
 export const refresh = async (req: Request, res: Response) => {
+  console.log("REFRESH HIT");
+console.log("COOKIE:", req.cookies.refreshToken);
   try {
     const refreshToken = req.cookies.refreshToken;
 
@@ -260,7 +262,7 @@ export const register = async (req: Request, res: Response) => {
       isVerified: false,
     });
 
-    const verificationLink = `${config.FRONTEND_URL}/verify-email?token=${verificationToken}&email=${normalizedEmail}`;
+    const verificationLink = `${config.FRONTEND_URL}/verify?token=${verificationToken}&email=${normalizedEmail}`;
 
     const mail = verificationEmailTemplate(
       user.fullname as string,
@@ -298,44 +300,44 @@ export const register = async (req: Request, res: Response) => {
     });
   }
 };
-export const isAuth = async (req: AuthRequest, res: Response) => {
-  try {
-    const user = await User.findById(req.userId).select(
-      "_id fullname email isVerified isDeactivated",
-    );
+  export const isAuth = async (req: AuthRequest, res: Response) => {
+    try {
+      const user = await User.findById(req.user?.userId).select(
+        "_id fullname email isVerified isDeactivated",
+      );
 
-    if (!user) {
-      return res.status(404).json({
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          code: "USER_NOT_FOUND",
+          message: "User not found",
+        });
+      }
+
+      if (user.isDeactivated || !user.isVerified) {
+        return res.status(401).json({
+          success: false,
+          code: "ACCOUNT_INACTIVE",
+          message: "Account is inactive or not verified",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        user: {
+          id: user._id,
+          fullname: user.fullname,
+          email: user.email,
+        },
+      });
+    } catch (error) {
+      return res.status(500).json({
         success: false,
-        code: "USER_NOT_FOUND",
-        message: "User not found",
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Internal server error",
       });
     }
-
-    if (user.isDeactivated || !user.isVerified) {
-      return res.status(401).json({
-        success: false,
-        code: "ACCOUNT_INACTIVE",
-        message: "Account is inactive or not verified",
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      user: {
-        id: user._id,
-        fullname: user.fullname,
-        email: user.email,
-      },
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Internal server error",
-    });
-  }
-};
+  };
 export const forgotPassword = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;

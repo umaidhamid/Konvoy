@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
     const { user, loading } = useAuth();
+    
     const router = useRouter();
     if (!loading && !user) {
    router.push('/auth/login');

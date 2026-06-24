@@ -128,7 +128,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     email: "umaid.hamid.in@gmail.com",
-    password: "Password@123",
+    password: "Password123!",
   });
   const { setUser } = useAuth();
 
@@ -149,12 +149,36 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
 
-    try {
-      const response = await authService.login(formData.email, formData.password);
-      toast.success("Welcome back to Konoy!");
-      setUser(response.user);
-      router.push("/dashboard");
-    } catch (error: any) {
+try {
+  console.log("1");
+
+  const response = await authService.login(
+    formData.email,
+    formData.password
+  );
+
+  console.log("2", response);
+
+  toast.success("Welcome back to Konoy!");
+
+  console.log("3");
+
+  setUser(response.user);
+
+  console.log("4");
+
+  router.push("/dashboard");
+
+  console.log("5");
+} catch (error: any) {
+  console.error("ERROR:", error);
+
+  toast.error(
+    error?.response?.data?.message ||
+    error?.message ||
+    "Invalid credentials provided"
+  );
+
       const errorCode = error?.response?.data?.code;
       const errorMessage = error?.response?.data?.message || "Invalid credentials provided";
 

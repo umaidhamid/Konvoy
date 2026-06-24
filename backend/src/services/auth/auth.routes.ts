@@ -26,7 +26,7 @@ router.post("/login", validate(loginSchema), login);
 router.post("/refresh", refresh);
 
 router.post("/logout", logout);
-router.post("/register", validate(registerSchema), register);
+router.post("/refresh-token", refresh);
 router.get("/is-auth", authMiddleware, isAuth);
 router.post("/forgot-password", forgotPassword);
 router.post("/resend-verification", resendverifytoken);
