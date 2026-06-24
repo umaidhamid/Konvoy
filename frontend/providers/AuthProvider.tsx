@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import { AuthContext, User } from "@/context/AuthContext";
+import { usePathname } from "next/navigation";
 
 export default function AuthProvider({
   children,
@@ -12,7 +13,12 @@ export default function AuthProvider({
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+const pathname = usePathname();
   useEffect(() => {
+      if (pathname.startsWith("/auth")) {
+    setLoading(false);
+    return;
+  }
     async function checkAuth() {
       try {
         const res = await api.get("/auth/is-auth");

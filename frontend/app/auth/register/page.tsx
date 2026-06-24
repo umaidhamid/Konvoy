@@ -418,7 +418,7 @@ export default function RegisterPage() {
           onDownload={handleDownloadCode}
           onDismiss={() => {
             setShowModal(false);
-            router.push("/dashboard");
+            router.push("/auth/login");
           }}
         />
       )}
