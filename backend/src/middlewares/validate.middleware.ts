@@ -1,35 +1,28 @@
-import { Request, Response, NextFunction } from "express";
 import { AnyZodObject, ZodError } from "zod";
+import { Request, Response, NextFunction } from "express";
 
 export const validate =
-(schema: AnyZodObject) =>
-(
-req: Request,
-res: Response,
-next: NextFunction
-) => {
-try {
-schema.parse({
-body: req.body,
-params: req.params,
-query: req.query,
-});
+  (schema: AnyZodObject) =>
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      await schema.parseAsync({
+        body: req.body,
+        query: req.query,
+        params: req.params,
+      });
 
-  next();
-} catch (error) {
-if (error instanceof ZodError) {
-  return res.status(400).json({
-    success: false,
-    errors: error.issues.map((err) => ({
-      field: err.path.join("."),
-      message: err.message,
-    })),
-  });
-}
+      next();
+    } catch (err) {
+      if (err instanceof ZodError) {
+        return res.status(400).json({
+          success: false,
+          errors: err.flatten().fieldErrors,
+        });
+      }
 
-  return res.status(500).json({
-    success: false,
-    message: "Internal server error",
-  });
-}
-};
+      return res.status(500).json({
+        success: false,
+        message: "Validation failed",
+      });
+    }
+  };
