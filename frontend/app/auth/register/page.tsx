@@ -307,7 +307,7 @@ export default function RegisterPage() {
       setShowModal(true);
       toast.success("Account created successfully!");
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Registration failed");
+  toast.error(error.response.data.errors.body[0]);
     } finally {
       setIsLoading(false);
     }

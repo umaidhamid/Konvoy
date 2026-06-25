@@ -232,9 +232,8 @@ export const register = async (req: Request, res: Response) => {
   try {
     const { fullname, phoneNumber, email, password } = req.body;
 
-    const normalizedEmail = String(email).toLowerCase();
 
-    const existingUser = await User.findOne({ email: normalizedEmail });
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
       return res
         .status(409)
@@ -250,7 +249,7 @@ export const register = async (req: Request, res: Response) => {
 
     const user = await User.create({
       fullname,
-      email: normalizedEmail,
+      email: email.toLowerCase(),
       passwordHash: hashedPassword,
       phoneNumber,
       verificationToken,
@@ -262,7 +261,7 @@ export const register = async (req: Request, res: Response) => {
       isVerified: false,
     });
 
-    const verificationLink = `${config.FRONTEND_URL}/verify?token=${verificationToken}&email=${normalizedEmail}`;
+    const verificationLink = `${config.FRONTEND_URL}/verify?token=${verificationToken}&email=${email.toLowerCase()}`;
 
     const mail = verificationEmailTemplate(
       user.fullname as string,
@@ -342,13 +341,6 @@ export const forgotPassword = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
 
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: "Email is required",
-      });
-    }
-
     const user = await User.findOne({
       email: email.toLowerCase(),
     });
@@ -410,13 +402,6 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({
-        success: false,
-        message: "Current password and new password are required",
-      });
-    }
-
     const user = await User.findById(userId).select("+passwordHash");
 
     if (!user) {
@@ -471,12 +456,6 @@ export const resendverifytoken = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
 
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: "Email is required",
-      });
-    }
 
     const user = await User.findOne({
       email: email.toLowerCase(),
@@ -541,14 +520,6 @@ export const resendverifytoken = async (req: Request, res: Response) => {
 export const verifyAccount = async (req: Request, res: Response) => {
   try {
     const { token, email } = req.body;
-
-    if (!token || !email) {
-      return res.status(400).json({
-        success: false,
-        message: "Token and email are required",
-      });
-    }
-
     const normalizedEmail = String(email).trim().toLowerCase();
 
     const user = await User.findOne({
@@ -610,14 +581,6 @@ export const verifyAccount = async (req: Request, res: Response) => {
 export const recoveryAccount = async (req: Request, res: Response) => {
   try {
     const { email, token: recoveryCode, newPassword } = req.body;
-
-    if (!email || !recoveryCode || !newPassword) {
-      return res.status(400).json({
-        success: false,
-        message: "Email, recovery code and new password are required",
-      });
-    }
-
     const normalizedEmail = String(email).trim().toLowerCase();
 
     const user = await User.findOne({
