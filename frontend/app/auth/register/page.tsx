@@ -2,269 +2,20 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Loader2, Copy, Download, AlertTriangle, Terminal, Shield, Share2, Code2 } from "lucide-react";
+import { Loader2, Terminal, Shield, Share2, Code2 } from "lucide-react";
 import { toast } from "sonner";
 import { authService } from "@/service/auth.service";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
-// ---------------------------------------------------------------------------
-// Shared style tokens (Exactly aligned with LoginPage)
-// ---------------------------------------------------------------------------
+// Modular Global Layout & Shared Components
+import { primaryButtonStyles } from "@/components/auth/auth-styles";
+import { BrandMark } from "@/components/auth/brand-mark";
+import { FeatureBadge } from "@/components/auth/feature-badge";
 
-const inputStyles =
-  "h-12 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 " +
-  "placeholder:text-slate-400 transition-colors duration-150 " +
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-0 focus-visible:border-slate-900 " +
-  "disabled:cursor-not-allowed disabled:opacity-50 " +
-  "dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50 dark:placeholder:text-slate-500 dark:focus-visible:ring-white dark:focus-visible:border-white";
-
-const labelStyles =
-  "text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400";
-
-const primaryButtonStyles =
-  "h-12 w-full rounded-xl bg-slate-900 text-sm font-medium text-white shadow-sm " +
-  "transition-colors duration-150 hover:bg-slate-800 " +
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2 " +
-  "disabled:cursor-not-allowed disabled:opacity-60 " +
-  "dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200 dark:focus-visible:ring-white";
-
-const secondaryButtonStyles =
-  "h-12 flex-1 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700 " +
-  "transition-colors duration-150 hover:bg-slate-100 " +
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 focus-visible:ring-offset-2 " +
-  "dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700";
-
-// ---------------------------------------------------------------------------
-// Field configuration
-// ---------------------------------------------------------------------------
-
-type FieldName = "fullName" | "phone" | "email" | "password" | "confirmPassword";
-
-interface FieldConfig {
-  name: FieldName;
-  label: string;
-  type: "text" | "email" | "tel" | "password";
-  autoComplete?: string;
-  placeholder?: string;
-  helperText?: string;
-}
-
-const FIELDS: FieldConfig[] = [
-  { name: "fullName", label: "Full name", type: "text", autoComplete: "name", placeholder: "Alex Mercer" },
-  { name: "phone", label: "Phone number", type: "tel", autoComplete: "tel", placeholder: "+1 (555) 000-0000" },
-  { name: "email", label: "Work email", type: "email", autoComplete: "email", placeholder: "name@company.com" },
-  {
-    name: "password",
-    label: "Password",
-    type: "password",
-    autoComplete: "new-password",
-    placeholder: "••••••••",
-    helperText: "Requires 8+ characters with mixed case letters, numbers & symbols.",
-  },
-  {
-    name: "confirmPassword",
-    label: "Confirm password",
-    type: "password",
-    placeholder: "••••••••",
-    autoComplete: "new-password",
-  },
-];
-
-// ---------------------------------------------------------------------------
-// Reusable sub-components
-// ---------------------------------------------------------------------------
-
-interface PasswordInputProps {
-  id: string;
-  name: string;
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  placeholder?: string;
-  autoComplete?: string;
-  required?: boolean;
-}
-
-function PasswordInput({ id, name, value, onChange, placeholder, autoComplete, required }: PasswordInputProps) {
-  const [visible, setVisible] = useState(false);
-
-  return (
-    <div className="relative">
-      <Input
-        id={id}
-        name={name}
-        type={visible ? "text" : "password"}
-        required={required}
-        placeholder={placeholder}
-        value={value}
-        onChange={onChange}
-        autoComplete={autoComplete}
-        className={`${inputStyles} pr-11`}
-      />
-      <button
-        type="button"
-        onClick={() => setVisible((v) => !v)}
-        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-200"
-        aria-label={visible ? "Hide password" : "Show password"}
-        tabIndex={-1}
-      >
-        {visible ? <EyeOff size={18} /> : <Eye size={18} />}
-      </button>
-    </div>
-  );
-}
-
-interface FormFieldProps {
-  config: FieldConfig;
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-}
-
-function FormField({ config, value, onChange }: FormFieldProps) {
-  const { name, label, type, autoComplete, placeholder, helperText } = config;
-
-  return (
-    <div className="space-y-1.5">
-      <Label htmlFor={name} className={labelStyles}>
-        {label}
-      </Label>
-
-      {type === "password" ? (
-        <PasswordInput
-          id={name}
-          name={name}
-          value={value}
-          onChange={onChange}
-          placeholder={placeholder}
-          autoComplete={autoComplete}
-          required
-        />
-      ) : (
-        <Input
-          id={name}
-          name={name}
-          type={type}
-          required
-          placeholder={placeholder}
-          value={value}
-          onChange={onChange}
-          autoComplete={autoComplete}
-          className={inputStyles}
-        />
-      )}
-
-      {helperText && (
-        <p className="text-[11px] leading-normal text-slate-400 dark:text-slate-500">{helperText}</p>
-      )}
-    </div>
-  );
-}
-
-interface FeatureBadgeProps {
-  icon: React.ReactNode;
-  label: string;
-}
-
-function FeatureBadge({ icon, label }: FeatureBadgeProps) {
-  return (
-    <div className="flex items-center gap-2.5 rounded-xl border border-slate-800 bg-slate-900 p-3">
-      <span className="shrink-0 text-slate-300">{icon}</span>
-      <span className="text-xs font-medium tracking-wide text-slate-200">{label}</span>
-    </div>
-  );
-}
-
-function BrandMark({ light = false }: { light?: boolean }) {
-  return (
-    <div className="flex items-center gap-3">
-      <div
-        className={
-          light
-            ? "flex h-9 w-9 items-center justify-center rounded-xl bg-white"
-            : "flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 dark:bg-white"
-        }
-      >
-        <span
-          className={
-            light
-              ? "text-sm font-black tracking-tight text-slate-900"
-              : "text-sm font-black tracking-tight text-white dark:text-slate-900"
-          }
-        >
-          K
-        </span>
-      </div>
-      <span
-        className={
-          light
-            ? "text-lg font-semibold tracking-tight text-white"
-            : "text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-50"
-        }
-      >
-        Konoy
-      </span>
-    </div>
-  );
-}
-
-interface RecoveryModalProps {
-  recoveryCode: string;
-  onCopy: () => void;
-  onDownload: () => void;
-  onDismiss: () => void;
-}
-
-function RecoveryModal({ recoveryCode, onCopy, onDownload, onDismiss }: RecoveryModalProps) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-[400px] rounded-2xl border border-slate-200 bg-white p-6 shadow-xl sm:p-8 dark:border-slate-800 dark:bg-slate-900">
-        <div className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-amber-100 bg-amber-50 text-amber-600 dark:border-amber-900/30 dark:bg-amber-950/30">
-            <AlertTriangle size={22} />
-          </div>
-          <h3 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-50">
-            Save your recovery code
-          </h3>
-          <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-            This is the <span className="font-semibold text-slate-700 dark:text-slate-300">only time</span> this
-            code will be shown. Store it somewhere safe — you&apos;ll need it to recover account control.
-          </p>
-        </div>
-
-        <div className="mt-6 rounded-xl border border-slate-800 bg-slate-950 px-4 py-4 text-center font-mono text-lg font-semibold tracking-wider text-white dark:border-slate-700">
-          {recoveryCode}
-        </div>
-
-        <div className="mt-6 flex gap-3">
-          <button type="button" onClick={onCopy} className={secondaryButtonStyles}>
-            <span className="flex items-center justify-center gap-2">
-              <Copy size={16} /> Copy
-            </span>
-          </button>
-          <button type="button" onClick={onDownload} className={primaryButtonStyles}>
-            <span className="flex items-center justify-center gap-2">
-              <Download size={16} /> Save file
-            </span>
-          </button>
-        </div>
-
-        <button
-          type="button"
-          onClick={onDismiss}
-          className="mt-5 w-full text-center text-xs font-semibold uppercase tracking-wider text-slate-400 transition-colors hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
-        >
-          I&apos;ve saved this securely
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Main page
-// ---------------------------------------------------------------------------
+// Modular Registration Local Components
+import { FormField, FIELDS } from "@/components/auth/register-field";
+import { RecoveryModal } from "@/components/auth/recovery-modal";
 
 export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -307,7 +58,7 @@ export default function RegisterPage() {
       setShowModal(true);
       toast.success("Account created successfully!");
     } catch (error: any) {
-  toast.error(error.response.data.errors.body[0]);
+      toast.error(error.response.data.errors.body[0]);
     } finally {
       setIsLoading(false);
     }
