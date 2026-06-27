@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Loader2, Terminal, Shield, Share2, Code2 } from "lucide-react";
+import { Loader2, Terminal, Shield, Share2, Code2 } from "lucide-react";
 import { toast } from "sonner";
 import { authService } from "@/service/auth.service";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,116 +11,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-// ---------------------------------------------------------------------------
-// Shared style tokens
-// ---------------------------------------------------------------------------
-
-const inputStyles =
-  "h-12 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 " +
-  "placeholder:text-slate-400 transition-colors duration-150 " +
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-0 focus-visible:border-slate-900 " +
-  "disabled:cursor-not-allowed disabled:opacity-50 " +
-  "dark:border-slate-800 dark:bg-slate-950 dark:text-slate-50 dark:placeholder:text-slate-500 dark:focus-visible:ring-white dark:focus-visible:border-white";
-
-const labelStyles =
-  "text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400";
-
-const primaryButtonStyles =
-  "h-12 w-full rounded-xl bg-slate-900 text-sm font-medium text-white shadow-sm " +
-  "transition-colors duration-150 hover:bg-slate-800 " +
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2 " +
-  "disabled:cursor-not-allowed disabled:opacity-60 " +
-  "dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200 dark:focus-visible:ring-white";
-
-// ---------------------------------------------------------------------------
-// Reusable sub-components
-// ---------------------------------------------------------------------------
-
-interface PasswordInputProps {
-  id: string;
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  placeholder?: string;
-  required?: boolean;
-}
-
-function PasswordInput({ id, value, onChange, placeholder, required }: PasswordInputProps) {
-  const [showPassword, setShowPassword] = useState(false);
-
-  return (
-    <div className="relative">
-      <Input
-        id={id}
-        type={showPassword ? "text" : "password"}
-        placeholder={placeholder}
-        required={required}
-        value={value}
-        onChange={onChange}
-        className={`${inputStyles} pr-11`}
-      />
-      <button
-        type="button"
-        onClick={() => setShowPassword(!showPassword)}
-        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-200"
-        aria-label={showPassword ? "Hide password" : "Show password"}
-        tabIndex={-1}
-      >
-        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-      </button>
-    </div>
-  );
-}
-
-interface FeatureBadgeProps {
-  icon: React.ReactNode;
-  label: string;
-}
-
-function FeatureBadge({ icon, label }: FeatureBadgeProps) {
-  return (
-    <div className="flex items-center gap-2.5 rounded-xl border border-slate-800 bg-slate-900 p-3">
-      <span className="shrink-0 text-slate-300">{icon}</span>
-      <span className="text-xs font-medium tracking-wide text-slate-200">{label}</span>
-    </div>
-  );
-}
-
-function BrandMark({ light = false }: { light?: boolean }) {
-  return (
-    <div className="flex items-center gap-3">
-      <div
-        className={
-          light
-            ? "flex h-9 w-9 items-center justify-center rounded-xl bg-white"
-            : "flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 dark:bg-white"
-        }
-      >
-        <span
-          className={
-            light
-              ? "text-sm font-black tracking-tight text-slate-900"
-              : "text-sm font-black tracking-tight text-white dark:text-slate-900"
-          }
-        >
-          K
-        </span>
-      </div>
-      <span
-        className={
-          light
-            ? "text-lg font-semibold tracking-tight text-white"
-            : "text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-50"
-        }
-      >
-        Konoy
-      </span>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Main page
-// ---------------------------------------------------------------------------
+// Modular Imports
+import { labelStyles, inputStyles, primaryButtonStyles } from "@/components/auth/auth-styles";
+import { BrandMark } from "@/components/auth/brand-mark";
+import { FeatureBadge } from "@/components/auth/feature-badge";
+import { PasswordInput } from "@/components/auth/password-input";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -149,35 +44,30 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
 
-try {
-  console.log("1");
+    try {
+      const response = await authService.login(
+        formData.email,
+        formData.password
+      );
 
-  const response = await authService.login(
-    formData.email,
-    formData.password
-  );
 
-  console.log("2", response);
+      toast.success("Welcome back to Konoy!");
 
-  toast.success("Welcome back to Konoy!");
 
-  console.log("3");
+      setUser(response.user);
 
-  setUser(response.user);
 
-  console.log("4");
+      router.push("/dashboard");
 
-  router.push("/dashboard");
+      console.log("5");
+    } catch (error: any) {
+      console.error("ERROR:", error);
 
-  console.log("5");
-} catch (error: any) {
-  console.error("ERROR:", error);
-
-  toast.error(
-    error?.response?.data?.message ||
-    error?.message ||
-    "Invalid credentials provided"
-  );
+      toast.error(
+        error?.response?.data?.message ||
+        error?.message ||
+        "Invalid credentials provided"
+      );
 
       const errorCode = error?.response?.data?.code;
       const errorMessage = error?.response?.data?.message || "Invalid credentials provided";
@@ -265,11 +155,11 @@ try {
                 Sign in
               </h2>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Enter your professional credentials or use SSO.
+                Enter your professional credentials .
               </p>
             </div>
 
-            <Button
+            {/* <Button
               type="button"
               variant="outline"
               className="mb-6 h-12 w-full rounded-xl border-slate-200 bg-white text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-900"
@@ -307,7 +197,7 @@ try {
                 Or
               </span>
               <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
-            </div>
+            </div> */}
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
