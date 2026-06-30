@@ -1,262 +1,229 @@
-"use client"
-import React, { useState } from 'react';
+"use client";
+import React, { useState } from "react";
+import ProjectForm, { ProjectFormData } from "@/components/admin/projects/ProjectForm";
 
-// ==========================================
-// 1. DUMMY DATA & MAIN APP STATE (ROUTER)
-// ==========================================
-export default function DevVaultApp() {
-  // Flat structure: Projects contain Files directly (no folders for MVP)
-  const [projects, setProjects] = useState([
-    {
-      id: 'p1',
-      name: 'E-Commerce App',
-      files: [
-        { id: 'f1', name: 'README.md', content: '# E-Commerce App\nPlan your project here.' },
-        { id: 'f2', name: 'todo.txt', content: '- Setup Auth\n- Create Cart Component' }
-      ]
+// Local Mock Data conforming to your Mongoose Schema structure
+interface ProjectItem {
+  _id: string;
+  userId: string;
+  name: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const initialProjects: ProjectItem[] = [
+  {
+    _id: "p1",
+    userId: "u123",
+    name: "GoFixy Service Platform",
+    description: "Appliance booking and instant repair management architecture with modern layouts.",
+    createdAt: "2026-04-10T14:32:00.000Z",
+    updatedAt: "2026-04-12T09:15:00.000Z",
+  },
+  {
+    _id: "p2",
+    userId: "u123",
+    name: "Mango Review QR",
+    description: "Elegant, customized micro-review system utilizing beautifully branded dynamic QR codes.",
+    createdAt: "2026-05-01T11:00:00.000Z",
+    updatedAt: "2026-05-01T11:00:00.000Z",
+  },
+];
+
+type ViewState = "LIST" | "CREATE" | "DETAILS" | "EDIT";
+
+const ProjectsPage: React.FC = () => {
+  const [projects, setProjects] = useState<ProjectItem[]>(initialProjects);
+  const [view, setView] = useState<ViewState>("LIST");
+  const [selectedProject, setSelectedProject] = useState<ProjectItem | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  // Handle Form Submission for both CREATE and EDIT modes
+  const handleFormSubmit = async (formData: ProjectFormData) => {
+    setLoading(true);
+    // Simulate API Latency
+    await new Promise((resolve) => setTimeout(resolve, 800));
+
+    if (view === "EDIT" && selectedProject) {
+      setProjects((prev) =>
+        prev.map((p) =>
+          p._id === selectedProject._id
+            ? { ...p, ...formData, updatedAt: new Date().toISOString() }
+            : p
+        )
+      );
+      // Synchronize details view state if editing from inside details
+      setSelectedProject((prev) =>
+        prev ? { ...prev, ...formData, updatedAt: new Date().toISOString() } : null
+      );
+    } else {
+      const newProject: ProjectItem = {
+        _id: `p_${Date.now()}`,
+        userId: "u123",
+        name: formData.name,
+        description: formData.description,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      setProjects((prev) => [newProject, ...prev]);
     }
-  ]);
 
-  // View state: 'dashboard' | 'workspace'
-  const [currentView, setCurrentView] = useState('dashboard');
-  const [activeProjectId, setActiveProjectId] = useState(null);
-
-  // Actions
-  const createProject = (name) => {
-    const newProject = { id: `p_${Date.now()}`, name, files: [] };
-    setProjects([...projects, newProject]);
+    setLoading(false);
+    setView("LIST");
   };
 
-  const openProject = (projectId) => {
-    setActiveProjectId(projectId);
-    setCurrentView('workspace');
+  const handleSelectDetails = (project: ProjectItem) => {
+    setSelectedProject(project);
+    setView("DETAILS");
   };
 
-  const closeProject = () => {
-    setActiveProjectId(null);
-    setCurrentView('dashboard');
-  };
-
-  const updateProjectFiles = (projectId, updatedFiles) => {
-    setProjects(projects.map(p => 
-      p.id === projectId ? { ...p, files: updatedFiles } : p
-    ));
-  };
-
-  const activeProject = projects.find(p => p.id === activeProjectId);
-
-  return (
-    <div className="h-screen w-screen bg-background text-foreground overflow-hidden font-sans">
-      {currentView === 'dashboard' && (
-        <ProjectsDashboard 
-          projects={projects} 
-          onCreateProject={createProject} 
-          onOpenProject={openProject} 
-        />
-      )}
-
-      {currentView === 'workspace' && activeProject && (
-        <FilesWorkspace 
-          project={activeProject} 
-          onBack={closeProject}
-          updateFiles={(newFiles) => updateProjectFiles(activeProject.id, newFiles)}
-        />
-      )}
-    </div>
-  );
-}
-
-// ==========================================
-// 2. DASHBOARD: CREATE & LIST PROJECTS
-// ==========================================
-function ProjectsDashboard({ projects, onCreateProject, onOpenProject }) {
-  const [newProjectName, setNewProjectName] = useState('');
-
-  const handleCreate = (e) => {
-    e.preventDefault();
-    if (!newProjectName.trim()) return;
-    onCreateProject(newProjectName);
-    setNewProjectName('');
+  const handleSelectEdit = (project: ProjectItem) => {
+    setSelectedProject(project);
+    setView("EDIT");
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-8 h-full flex flex-col">
-      <header className="mb-8 border-b border-border pb-4">
-        <h1 className="text-3xl font-bold tracking-tight">DevVault Projects</h1>
-        <p className="text-muted text-sm mt-1">Select a project or create a new one.</p>
-      </header>
-
-      <form onSubmit={handleCreate} className="flex gap-3 mb-8">
-        <input 
-          type="text" 
-          placeholder="Enter new project name..."
-          value={newProjectName}
-          onChange={(e) => setNewProjectName(e.target.value)}
-          className="flex-1 max-w-sm px-4 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-        />
-        <button type="submit" className="px-4 py-2 bg-primary text-primary-foreground font-medium rounded-md hover:opacity-90">
-          Create Project
-        </button>
-      </form>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-max">
-        {projects.map(project => (
-          <div 
-            key={project.id} 
-            onClick={() => onOpenProject(project.id)}
-            className="p-5 border border-border rounded-lg bg-card cursor-pointer hover:border-primary hover:shadow-sm transition-all flex flex-col justify-between h-32"
-          >
-            <div>
-              <h3 className="font-semibold text-lg">{project.name}</h3>
-              <span className="text-xs text-muted mt-1">{project.files.length} files</span>
-            </div>
-            <div className="text-sm text-primary font-medium flex items-center gap-1 mt-4">
-              Open Workspace →
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ==========================================
-// 3. WORKSPACE: PROJECT FILES PAGE
-// ==========================================
-function FilesWorkspace({ project, onBack, updateFiles }) {
-  const [newFileName, setNewFileName] = useState('');
-  const [editingFile, setEditingFile] = useState(null); // Holds the file object currently being edited
-
-  const handleCreateFile = (e) => {
-    e.preventDefault();
-    if (!newFileName.trim()) return;
-    const newFile = {
-      id: `f_${Date.now()}`,
-      name: newFileName,
-      content: '' // Start empty
-    };
-    updateFiles([...project.files, newFile]);
-    setNewFileName('');
-  };
-
-  const saveFileContent = (fileId, newContent) => {
-    const updated = project.files.map(f => 
-      f.id === fileId ? { ...f, content: newContent } : f
-    );
-    updateFiles(updated);
-    setEditingFile(null); // Close modal on save
-  };
-
-  return (
-    <div className="flex flex-col h-full">
-      {/* Workspace Header */}
-      <header className="px-6 py-4 border-b border-border bg-card flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <button onClick={onBack} className="text-sm text-muted hover:text-foreground border border-border px-3 py-1.5 rounded-md">
-            ← Back to Dashboard
-          </button>
-          <h2 className="text-xl font-bold tracking-tight">{project.name} Workspace</h2>
-        </div>
+    <div className="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50 p-4 md:p-8 transition-colors">
+      <div className="max-w-6xl mx-auto space-y-8">
         
-        <form onSubmit={handleCreateFile} className="flex gap-2">
-          <input 
-            type="text" 
-            placeholder="New file name (e.g., notes.md)"
-            value={newFileName}
-            onChange={(e) => setNewFileName(e.target.value)}
-            className="w-64 px-3 py-1.5 text-sm border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-          />
-          <button type="submit" className="px-3 py-1.5 text-sm bg-secondary text-secondary-foreground font-medium border border-border rounded-md hover:bg-card-hover">
-            + Add File
-          </button>
-        </form>
-      </header>
-
-      {/* Files Grid */}
-      <main className="flex-1 overflow-y-auto p-6 bg-background">
-        {project.files.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-muted text-center">
-            <p>This project is empty.</p>
-            <p className="text-sm">Create a file using the input above.</p>
+        {/* Dynamic Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-6 border-b border-zinc-200 dark:border-zinc-800">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+              {view === "LIST" && "Projects Workspace"}
+              {view === "CREATE" && "New Project"}
+              {view === "DETAILS" && selectedProject?.name}
+              {view === "EDIT" && "Modify Project"}
+            </h1>
+            <p className="text-sm text-zinc-500 mt-1">
+              {view === "LIST" && "Manage, organize, and inspect your ongoing product deployments."}
+              {view === "CREATE" && "Set up parameters to provision your brand-new system node."}
+              {view === "DETAILS" && "Complete project configuration profiles and timestamps."}
+              {view === "EDIT" && `Updating structural values for ${selectedProject?.name}`}
+            </p>
           </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {project.files.map(file => (
-              <div 
-                key={file.id} 
-                onClick={() => setEditingFile(file)}
-                className="group p-4 border border-border rounded-lg bg-card cursor-pointer hover:border-primary transition-colors h-40 flex flex-col"
+
+          {view === "LIST" && (
+            <button
+              onClick={() => setView("CREATE")}
+              className="px-4 py-2.5 bg-zinc-950 text-white dark:bg-zinc-50 dark:text-zinc-950 text-sm font-medium rounded-xl hover:opacity-90 transition shadow-sm w-full sm:w-auto text-center"
+            >
+              + Create Project
+            </button>
+          )}
+
+          {view !== "LIST" && (
+            <button
+              onClick={() => setView("LIST")}
+              className="px-4 py-2 border border-zinc-300 dark:border-zinc-700 text-sm font-medium rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 transition"
+            >
+              &larr; Back to List
+            </button>
+          )}
+        </div>
+
+        {/* VIEW 1: PROJECT LIST GRID */}
+        {view === "LIST" && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {projects.map((project) => (
+              <div
+                key={project._id}
+                className="group flex flex-col justify-between p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm transition-all hover:shadow-md"
               >
-                <div className="font-semibold text-sm border-b border-border pb-2 mb-2 truncate">
-                  📄 {file.name}
-                </div>
-                <div className="flex-1 overflow-hidden">
-                  <p className="text-xs text-muted font-mono whitespace-pre-wrap truncate">
-                    {file.content || <span className="italic opacity-50">Empty file...</span>}
+                <div>
+                  <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors">
+                    {project.name}
+                  </h3>
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-2 line-clamp-3">
+                    {project.description || "No description provided for this project workspace."}
                   </p>
                 </div>
-                <div className="mt-2 text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                  Click to Edit
+
+                <div className="flex items-center justify-end gap-3 pt-6 mt-4 border-t border-zinc-100 dark:border-zinc-800">
+                  <button
+                    onClick={() => handleSelectDetails(project)}
+                    className="text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:underline"
+                  >
+                    View Details
+                  </button>
+                  <button
+                    onClick={() => handleSelectEdit(project)}
+                    className="px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 text-xs font-medium rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition"
+                  >
+                    Edit
+                  </button>
                 </div>
               </div>
             ))}
           </div>
         )}
-      </main>
 
-      {/* EDITOR MODAL */}
-      {editingFile && (
-        <EditorModal 
-          file={editingFile} 
-          onSave={saveFileContent} 
-          onCancel={() => setEditingFile(null)} 
-        />
-      )}
-    </div>
-  );
-}
-
-// ==========================================
-// 4. EDITOR MODAL
-// ==========================================
-function EditorModal({ file, onSave, onCancel }) {
-  const [content, setContent] = useState(file.content);
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200">
-      <div className="bg-card w-full max-w-4xl h-[80vh] flex flex-col rounded-xl border border-border shadow-2xl overflow-hidden animate-in zoom-in-95">
-        
-        {/* Modal Header */}
-        <div className="px-5 py-3 border-b border-border bg-background flex items-center justify-between">
-          <h3 className="font-semibold font-mono text-sm">Editing: {file.name}</h3>
-          <div className="flex gap-2">
-            <button 
-              onClick={onCancel}
-              className="px-3 py-1.5 text-xs font-medium border border-border rounded-md hover:bg-card-hover"
-            >
-              Cancel
-            </button>
-            <button 
-              onClick={() => onSave(file.id, content)}
-              className="px-4 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-md hover:opacity-90"
-            >
-              Save Changes
-            </button>
-          </div>
-        </div>
-
-        {/* Modal Textarea */}
-        <div className="flex-1 bg-background p-4">
-          <textarea
-            autoFocus
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            className="w-full h-full p-4 font-mono text-sm bg-card border border-input rounded-lg focus:outline-none focus:ring-1 focus:ring-primary resize-none"
-            placeholder="Type your content here..."
+        {/* VIEW 2: CREATE PROJECT */}
+        {view === "CREATE" && (
+          <ProjectForm
+            onSubmit={handleFormSubmit}
+            onCancel={() => setView("LIST")}
+            isSubmitting={loading}
           />
-        </div>
+        )}
 
+        {/* VIEW 3: PROJECT DETAILS */}
+        {view === "DETAILS" && selectedProject && (
+          <div className="max-w-2xl mx-auto p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm space-y-6">
+            <div className="flex justify-between items-start gap-4">
+              <div>
+                <span className="text-xs font-mono px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded text-zinc-500">
+                  ID: {selectedProject._id}
+                </span>
+                <h2 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50 mt-3">
+                  {selectedProject.name}
+                </h2>
+              </div>
+              <button
+                onClick={() => setView("EDIT")}
+                className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 text-sm font-medium rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-700 transition"
+              >
+                Edit Details
+              </button>
+            </div>
+
+            <p className="text-zinc-600 dark:text-zinc-300 text-sm leading-relaxed whitespace-pre-wrap">
+              {selectedProject.description || "No description provided."}
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-zinc-100 dark:border-zinc-800 text-xs">
+              <div>
+                <p className="text-zinc-400">Created At</p>
+                <p className="font-medium mt-0.5 text-zinc-700 dark:text-zinc-300">
+                  {new Date(selectedProject.createdAt).toLocaleString()}
+                </p>
+              </div>
+              <div>
+                <p className="text-zinc-400">Last Modified</p>
+                <p className="font-medium mt-0.5 text-zinc-700 dark:text-zinc-300">
+                  {new Date(selectedProject.updatedAt).toLocaleString()}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* VIEW 4: EDIT PROJECT (Uses the shared form component) */}
+        {view === "EDIT" && selectedProject && (
+          <ProjectForm
+            initialData={{
+              name: selectedProject.name,
+              description: selectedProject.description,
+            }}
+            onSubmit={handleFormSubmit}
+            onCancel={() => setView("LIST")}
+            isSubmitting={loading}
+          />
+        )}
       </div>
     </div>
   );
-}
+};
+
+export default ProjectsPage;

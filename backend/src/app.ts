@@ -4,7 +4,7 @@ import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import { config } from "./config";
 import authRoutes from "./services/auth/auth.routes";
-
+import projectRoutes from "./services/projects/projects.routes";
 const app = express();
 
 app.use(
@@ -27,5 +27,6 @@ message: "API is running",
 });
 
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/projects", projectRoutes);
 
 export default app;
