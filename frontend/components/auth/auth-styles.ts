@@ -14,3 +14,10 @@ export const primaryButtonStyles =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2 " +
   "disabled:cursor-not-allowed disabled:opacity-60 " +
   "dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200 dark:focus-visible:ring-white";
+
+export const secondaryButtonStyles =
+  "h-12 w-full rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-700 shadow-sm " +
+  "transition-colors duration-150 hover:bg-slate-50 hover:text-slate-900 " +
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2 " +
+  "disabled:cursor-not-allowed disabled:opacity-60 " +
+  "dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900 dark:hover:text-slate-50 dark:focus-visible:ring-white";

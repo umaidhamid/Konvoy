@@ -4,7 +4,7 @@ import {
   createRecoveryCode,
   verifyRecoveryCode,
 } from "../../utils/recoveryCode";
-import User from "../../models/users.models";
+import User from "../../models/users.model";
 import Session from "../../models/Session";
 import crypto from "crypto";
 import { generateAccessToken, generateRefreshToken } from "../../utils/jwt";
