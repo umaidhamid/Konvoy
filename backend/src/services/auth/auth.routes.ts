@@ -22,7 +22,6 @@ import { authMiddleware } from "../../middlewares/auth.middleware";
 const router = express.Router();
 
 router.post("/login", validate(loginSchema), login);
-
 router.post("/refresh", refresh);
 router.post("/register", validate(registerSchema), register);
 router.post("/logout", logout);

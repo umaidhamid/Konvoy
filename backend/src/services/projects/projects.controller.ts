@@ -39,7 +39,7 @@ export const getProjects = async (req: any, res: any) => {
   try {
     const projects = await Project.find({
       userId: req.user.userId,
-    }).sort({ createdAt: -1 }).select(" -userId createdAt updatedAt" );
+    }).sort({ createdAt: -1 }).select(" -userId -createdAt -updatedAt" );
 
     return res.status(200).json({
       success: true,

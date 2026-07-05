@@ -1,8 +1,10 @@
 import mongoose from "mongoose";
+import slugify from "slugify";
 
 export interface IProject extends mongoose.Document {
   userId: mongoose.Types.ObjectId;
   name: string;
+  slug: string;
   description: string;
   createdAt: Date;
   updatedAt: Date;
@@ -22,6 +24,12 @@ const projectSchema = new mongoose.Schema<IProject>(
       trim: true,
       maxlength: [100, "Project name cannot exceed 100 characters"],
     },
+    slug: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+    },
     description: {
       type: String,
       trim: true,
@@ -35,8 +43,20 @@ const projectSchema = new mongoose.Schema<IProject>(
   }
 );
 
+// Generate slug before saving
+projectSchema.pre("validate", function () {
+  if (this.isModified("name")) {
+    this.slug = slugify(this.name, {
+      lower: true,
+      strict: true,
+      trim: true,
+    });
+  }
+});
+
+// Prevent duplicate project names/slugs per user
 projectSchema.index(
-  { userId: 1, name: 1 },
+  { userId: 1, slug: 1 },
   { unique: true }
 );
 
