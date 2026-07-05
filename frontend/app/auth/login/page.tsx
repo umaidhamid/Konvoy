@@ -58,8 +58,6 @@ export default function LoginPage() {
 
 
       router.push("/dashboard");
-
-      console.log("5");
     } catch (error: any) {
       console.error("ERROR:", error);
 
