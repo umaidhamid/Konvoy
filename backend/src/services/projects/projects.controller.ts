@@ -3,7 +3,7 @@ import Project from "../../models/projects.model";
 export const createProject = async (req: any, res: any) => {
   try {
     const { name, description } = req.body;
-// console.log(name,description)
+
     const existingProject = await Project.findOne({
       userId: req.user.userId,
       name,
