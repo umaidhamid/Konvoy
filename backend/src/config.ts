@@ -12,7 +12,8 @@ if (
   !process.env.PORT ||
   !process.env.EMAIL_USER ||
   !process.env.EMAIL_PASSWORD ||
-  !process.env.FRONTEND_URL
+  !process.env.FRONTEND_URL ||
+  !process.env.FILE_ENCRYPTION_KEY
 ) {
   throw new Error("Missing environment variables");
 }
@@ -29,4 +30,6 @@ export const config = {
 
   accessTokenExpiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN,
   refreshTokenExpiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN,
+  
+  fileEncryptionKey: process.env.FILE_ENCRYPTION_KEY,
 };

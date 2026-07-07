@@ -87,14 +87,16 @@ export const login = async (req: Request, res: Response) => {
     user.lastLoginAt = new Date();
     await user.save();
 
-    return res.status(200).json({
-      success: true,
-      user: {
-        id: user._id,
-        fullname: user.fullname,
-        email: user.email,
-      },
-    });
+   return res.status(200).json({
+  success: true,
+  accessToken,
+  refreshToken,
+  user: {
+    id: user._id,
+    fullname: user.fullname,
+    email: user.email,
+  },
+});
   } catch (e) {
     return res.status(500).json({
       message: "Internal server error",
