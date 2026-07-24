@@ -31,7 +31,7 @@ export function BrandMark({ light = false }: BrandMarkProps) {
             : "text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-50"
         }
       >
-        Konoy
+        Konvoy
       </span>
     </div>
   );

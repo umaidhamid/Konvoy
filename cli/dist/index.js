@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { Command } from "commander";
 import { loginCommand } from "./commands/login.js";
+import { projectsCommand } from "./commands/projects.js";
 const program = new Command();
 program
     .name("konvoy")
@@ -10,5 +11,9 @@ program
     .command("login")
     .description("Login to Konvoy")
     .action(loginCommand);
+program
+    .command("projects")
+    .description("List your projects")
+    .action(projectsCommand);
 program.parse();
 //# sourceMappingURL=index.js.map

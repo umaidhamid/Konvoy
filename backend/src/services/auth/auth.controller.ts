@@ -1,14 +1,13 @@
 import { Request, Response } from "express";
-import jwt from "jsonwebtoken";
 import {
   createRecoveryCode,
   verifyRecoveryCode,
 } from "../../utils/recoveryCode";
 import User from "../../models/users.model";
 import Session from "../../models/Session";
-import crypto from "crypto";
+import * as crypto from "crypto";
 import { generateAccessToken, generateRefreshToken } from "../../utils/jwt";
-
+import type { JwtPayload } from "../../types/auth"; 
 import { hashToken } from "../../utils/hashToken";
 import {
   verificationEmailTemplate,
@@ -62,7 +61,7 @@ export const login = async (req: Request, res: Response) => {
         message: "Your account is not verified. Please verify your email.",
       });
     }
-    const payload = {
+    const payload: JwtPayload = {
       userId: user._id.toString(),
       email: user.email!,
       role: user.role as "user" | "admin",
@@ -118,13 +117,9 @@ console.log("COOKIE:", req.cookies.refreshToken);
       });
     }
 
-    let decoded: { userId: string; email: string; role: "user" | "admin" };
+    let decoded: JwtPayload;
     try {
-      decoded = jwt.verify(refreshToken, config.refreshTokenSecret) as {
-        userId: string;
-        email: string;
-        role: "user" | "admin";
-      };
+      decoded = jwt.verify(refreshToken, config.refreshTokenSecret) as JwtPayload;
     } catch (err) {
       // Clean up the stale cookie regardless of which JWT error this is
       res.clearCookie("accessToken", ACCESS_TOKEN_COOKIE_OPTIONS);

@@ -1,28 +1,23 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-
+import { JwtPayload } from "../types/auth";
 export interface AuthRequest extends Request {
-  user?: {
-    userId: string;
-    role: string;
-    email: string;
-  };
+  user?: JwtPayload;
 }
-
-interface JwtPayload {
-  userId: string;
-  role: string;
-  email: string;
-}
-
 export const authMiddleware = (
-  req: AuthRequest,
+  req: AuthRequest, 
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const accessToken = req.cookies.accessToken;
+    let accessToken = req.cookies.accessToken;
+ if (!accessToken) {
+      const authHeader = req.headers.authorization;
 
+      if (authHeader?.startsWith("Bearer ")) {
+        accessToken = authHeader.split(" ")[1];
+      }
+    }
     if (!accessToken) {
       return res.status(401).json({
         success: false,
