@@ -2,12 +2,14 @@
 
 import { useAuth } from "@/hooks/useAuth";
 import { BrandMark } from "@/components/auth/brand-mark";
+import { ArrowRight } from "lucide-react";
 
 const NAV_LINKS = [
   { label: "How it works", href: "#how-it-works" },
   { label: "Features", href: "#features" },
   { label: "CLI", href: "#cli" },
   { label: "Roadmap", href: "#roadmap" },
+  { label: "Contact", href: "/contact" },
 ];
 
 export const Navbar = () => {
@@ -20,7 +22,7 @@ export const Navbar = () => {
           <BrandMark />
         </a>
 
-        <div className="hidden md:flex items-center gap-8 text-sm text-secondary">
+        <div className="hidden md:flex items-center gap-8 text-sm text-primary">
           {NAV_LINKS.map((link) => (
             <a
               key={link.href}
@@ -44,15 +46,19 @@ export const Navbar = () => {
             <>
               <a
                 href="/auth/login"
-                className="text-sm text-secondary hover:text-foreground transition-colors hidden sm:block"
+                className="bg-primary/80 text-primary-foreground px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity hidden sm:block"
               >
-                Sign in
+                <div className="flex items-center gap-1">
+                  Login <ArrowRight className="ml-1 h-4 w-4" />
+                </div>
               </a>
               <a
                 href="/auth/register"
                 className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
               >
-                Get started
+                <div className="flex items-center gap-1">
+                  Get started <ArrowRight className="ml-1 h-4 w-4" />
+                </div>
               </a>
             </>
           )}

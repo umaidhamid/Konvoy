@@ -1,8 +1,8 @@
 import express from "express";
-import { authMiddleware } from "../../middlewares/auth.middleware";
-import { validate } from "../../middlewares/validate.middleware";
-import { createProjectSchema } from "../../validations/project.validation";
-import { createProject, getProjects, deleteProject, updateProject, getProject } from "./projects.controller";
+import { authMiddleware } from "../../middlewares/auth.middleware.js";
+import { validate } from "../../middlewares/validate.middleware.js";
+import { createProjectSchema } from "../../validations/project.validation.js";
+import { createProject, getProjects, deleteProject, updateProject, getProject } from "./projects.controller.js";
 
 const projectRouter = express.Router();
 

@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
-import { Input } from "@/components/ui/button"; // Note: Checked your imports, your code imported Input from @/components/ui/input but reused styling rules appropriately.
-import { Input as CustomInput } from "@/components/ui/input";
+import { Input } from "@/components/ui/input";
 import { inputStyles } from "./auth-styles";
 
 interface PasswordInputProps {
@@ -19,7 +18,7 @@ export function PasswordInput({ id, value, onChange, placeholder, required }: Pa
 
   return (
     <div className="relative">
-      <CustomInput
+      <Input
         id={id}
         type={showPassword ? "text" : "password"}
         placeholder={placeholder}

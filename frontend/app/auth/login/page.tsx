@@ -18,25 +18,24 @@ import { FeatureBadge } from "@/components/auth/feature-badge";
 import { PasswordInput } from "@/components/auth/password-input";
 
 export default function LoginPage() {
+
   const [isLoading, setIsLoading] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const router = useRouter();
   const [formData, setFormData] = useState({
-    email: "umaid.hamid.in@gmail.com",
-    password: "Password123!",
+    email: "",
+    password: "",
   });
-  const { setUser } = useAuth();
+  const [rememberMe, setRememberMe] = useState(true);
+  const { setUser,user } = useAuth();
 
-  // Pointer tracking reference retained for the auth panel (no longer used
-  // to render a glow — kept so the hook/handler stay available if needed).
   const cardRef = useRef<HTMLDivElement>(null);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;
     const rect = cardRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
     setMousePos({ x, y });
   };
 
@@ -50,25 +49,19 @@ export default function LoginPage() {
         formData.password
       );
 
-
-      toast.success("Welcome back to Konoy!");
-
+      toast.success("Welcome back to Konvoy!");
 
       setUser(response.user);
-
 
       router.push("/dashboard");
     } catch (error: any) {
       console.error("ERROR:", error);
 
-      toast.error(
+      const errorCode = error?.response?.data?.code;
+      const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
-        "Invalid credentials provided"
-      );
-
-      const errorCode = error?.response?.data?.code;
-      const errorMessage = error?.response?.data?.message || "Invalid credentials provided";
+        "Invalid credentials provided";
 
       if (errorCode === "ACCOUNT_NOT_VERIFIED") {
         toast.error(errorMessage, {
@@ -96,24 +89,27 @@ export default function LoginPage() {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    setIsGoogleLoading(true);
-    try {
-      toast.success("Connecting securely via Google SSO...");
-    } catch (error: any) {
-      toast.error("Failed to authenticate with Google");
-    } finally {
-      setIsGoogleLoading(false);
-    }
-  };
-
   return (
     <div className="flex min-h-screen w-full bg-white lg:grid lg:grid-cols-12 dark:bg-slate-950">
       {/* Left: brand / product panel */}
-      <div className="relative hidden flex-col justify-between border-r border-slate-800 bg-slate-950 p-12 text-white lg:col-span-5 lg:flex xl:col-span-4">
-        <BrandMark light />
+      <div className="relative hidden flex-col justify-between overflow-hidden border-r border-slate-800 bg-slate-950 p-12 text-white lg:col-span-5 lg:flex xl:col-span-4">
+        {/* Ambient background */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.07]"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)",
+            backgroundSize: "36px 36px",
+          }}
+        />
+        <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-emerald-500/20 blur-[120px]" />
+        <div className="pointer-events-none absolute -bottom-40 -right-24 h-96 w-96 rounded-full bg-indigo-500/20 blur-[120px]" />
 
-        <div className="flex max-w-sm flex-col gap-5">
+        <div className="relative z-10">
+          <BrandMark light />
+        </div>
+
+        <div className="relative z-10 flex max-w-sm flex-col gap-5">
           <h1 className="text-3xl font-semibold leading-tight tracking-tight text-white">
             Terminal access for your secret drops.
           </h1>
@@ -123,81 +119,49 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="relative z-10 grid grid-cols-2 gap-3">
           <FeatureBadge icon={<Terminal size={16} />} label="CLI fetching" />
           <FeatureBadge icon={<Shield size={16} />} label="Encrypted" />
           <FeatureBadge icon={<Share2 size={16} />} label="Share links" />
           <FeatureBadge icon={<Code2 size={16} />} label="Dev docs" />
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-slate-500">
+        <div className="relative z-10 flex items-center gap-2 text-xs text-slate-500">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
           <span>v1.0.4 — Developer workspace core</span>
         </div>
       </div>
 
       {/* Right: authentication form */}
-      <div
-        ref={cardRef}
-        onMouseMove={handleMouseMove}
-        className="flex flex-1 items-center justify-center p-6 sm:p-10 lg:col-span-7 xl:col-span-8"
-      >
+      <div className="flex flex-1 items-center justify-center p-6 sm:p-10 lg:col-span-7 xl:col-span-8">
         <div className="w-full max-w-[420px]">
           <div className="mb-8 flex justify-center lg:hidden">
             <BrandMark />
           </div>
 
-          <div className="w-full rounded-2xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <div className="mb-7 space-y-1.5">
+          <div
+            ref={cardRef}
+            onMouseMove={handleMouseMove}
+            className="group relative w-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-8 shadow-sm transition-shadow duration-300 hover:shadow-xl hover:shadow-slate-200/60 dark:border-slate-800 dark:bg-slate-900 dark:hover:shadow-none"
+          >
+            {/* Cursor-tracked spotlight */}
+            <div
+              className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+              style={{
+                background: `radial-gradient(500px circle at ${mousePos.x}% ${mousePos.y}%, rgba(15, 23, 42, 0.06), transparent 60%)`,
+              }}
+            />
+
+            <div className="relative mb-7 space-y-1.5">
               <h2 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-50">
                 Sign in
               </h2>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Enter your professional credentials .
+                Enter your professional credentials to continue.
               </p>
             </div>
 
-            {/* <Button
-              type="button"
-              variant="outline"
-              className="mb-6 h-12 w-full rounded-xl border-slate-200 bg-white text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-900"
-              onClick={handleGoogleLogin}
-              disabled={isGoogleLoading || isLoading}
-            >
-              {isGoogleLoading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
-                  <path
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                    fill="#4285F4"
-                  />
-                  <path
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.99.66-2.26 1.05-3.71 1.05-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    fill="#34A853"
-                  />
-                  <path
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.84.81-.62z"
-                    fill="#FBBC05"
-                  />
-                  <path
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.46 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                    fill="#EA4335"
-                  />
-                </svg>
-              )}
-              {isGoogleLoading ? "Connecting..." : "Sign in with Google"}
-            </Button>
-
-            <div className="mb-6 flex items-center gap-4">
-              <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
-              <span className="text-xs font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                Or
-              </span>
-              <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
-            </div> */}
-
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="relative space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="email" className={labelStyles}>
                   Work email
@@ -208,6 +172,7 @@ export default function LoginPage() {
                   placeholder="name@company.com"
                   required
                   autoComplete="email"
+                  autoFocus
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className={inputStyles}
@@ -237,10 +202,20 @@ export default function LoginPage() {
                 />
               </div>
 
+              <label className="flex select-none items-center gap-2 pt-1 text-sm text-slate-500 dark:text-slate-400">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 text-slate-900 accent-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-0 dark:border-slate-700 dark:accent-white"
+                />
+                Keep me signed in on this device
+              </label>
+
               <Button
                 type="submit"
                 className={`${primaryButtonStyles} mt-2`}
-                disabled={isLoading || isGoogleLoading}
+                disabled={isLoading}
               >
                 <span className="flex items-center justify-center">
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -249,13 +224,20 @@ export default function LoginPage() {
               </Button>
             </form>
 
-            <div className="mt-7 border-t border-slate-100 pt-5 text-center text-sm text-slate-500 dark:border-slate-800 dark:text-slate-400">
+            <div className="relative mt-7 border-t border-slate-100 pt-5 text-center text-sm text-slate-500 dark:border-slate-800 dark:text-slate-400">
               Don&apos;t have an account?{" "}
               <a href="/auth/register" className="font-semibold text-slate-900 underline-offset-4 hover:underline dark:text-slate-50">
                 Create one
               </a>
             </div>
           </div>
+
+          <p className="mt-6 text-center text-xs text-slate-400 dark:text-slate-600">
+            Need help?{" "}
+            <a href="/contact" className="font-medium text-slate-500 underline-offset-4 hover:underline dark:text-slate-400">
+              Contact support
+            </a>
+          </p>
         </div>
       </div>
     </div>

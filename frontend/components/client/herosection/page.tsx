@@ -62,8 +62,8 @@ export const Hero = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-card text-secondary text-xs font-semibold tracking-wide mb-6 shadow-xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-card text-primary text-xs font-semibold tracking-wide mb-6 shadow-xs">
+              <span className="w-1.5 h-1.5  rounded-full bg-primary" />
               Encrypted at rest
             </span>
 
@@ -78,11 +78,11 @@ export const Hero = () => {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.5 }}
-            className="text-base sm:text-lg text-secondary max-w-xl mx-auto lg:mx-0 font-normal leading-relaxed"
+            className="text-base sm:text-lgtext-primary max-w-xl mx-auto lg:mx-0 font-normal leading-relaxed"
           >
             Konvoy stores your project files in an encrypted vault, then hands them
             back through a web editor or a single CLI command — no more emailing
-            .env files or copy-pasting secrets between machines.
+            .env files or copy-pasting secrets between machines.  
           </motion.p>
 
           <motion.div
@@ -99,7 +99,7 @@ export const Hero = () => {
             </a>
             <a
               href="#cli"
-              className="w-full sm:w-auto text-center bg-background border border-border text-secondary hover:text-foreground hover:bg-card-hover px-8 py-3.5 rounded-xl font-semibold shadow-xs transition-all duration-150 cursor-pointer"
+              className="w-full sm:w-auto text-center bg-background border border-border text-primary hover:text-foreground hover:bg-card-hover px-8 py-3.5 rounded-xl font-semibold shadow-xs transition-all duration-150 cursor-pointer"
             >
               See the CLI
             </a>
@@ -120,11 +120,11 @@ export const Hero = () => {
               <div className="flex items-center gap-6">
                 {/* Window Controls - Use border/muted tokens cleanly */}
                 <div className="flex gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-border" />
-                  <div className="w-3 h-3 rounded-full bg-border" />
-                  <div className="w-3 h-3 rounded-full bg-border" />
+                  <div className="w-3 h-3 rounded-full bg-destructive" />
+                  <div className="w-3 h-3 rounded-full bg-warning" />
+                  <div className="w-3 h-3 rounded-full bg-success" />
                 </div>
-                <span className="text-xs text-muted font-mono tracking-tight hidden sm:inline-block">🗂️ main</span>
+                <span className="text-xs text-muted-foreground font-mono tracking-tight hidden sm:inline-block">🗂️ main</span>
               </div>
 
               {/* Theme Variable Controlled File Tabs */}
@@ -138,7 +138,7 @@ export const Hero = () => {
                       className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-mono text-xs transition-all duration-150 border cursor-pointer ${
                         isActive
                           ? "bg-background border-border text-primary shadow-xs font-semibold"
-                          : "bg-transparent border-transparent text-muted hover:text-foreground hover:bg-background/40"
+                          : "bg-transparent border-transparent text-destructive hover:text-foreground hover:bg-background/40"
                       }`}
                     >
                       {FILE_ICONS[fileName] || FILE_ICONS["next.config.js"]}

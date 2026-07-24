@@ -1,10 +1,10 @@
 // ============================================
 // services/projectfile.service.ts
 // ============================================
-import Project from "../../models/projects.model";
-import ProjectFile from "../../models/ProjectFile.model";
-import { AppError } from "../../utils/AppError"; // swap for your own error class if different
-import { encrypt, decrypt } from "../../utils/encryption";
+import Project from "../../models/projects.model.js";
+import ProjectFile from "../../models/ProjectFile.model.js";
+import { AppError } from "../../utils/AppError.js"; // swap for your own error class if different
+import { encrypt, decrypt } from "../../utils/encryption.js";
 export const projectFileService = {
   async getProjectFiles(slug: string, userId: string) {
     const project = await Project.findOne({ slug, userId });

@@ -12,12 +12,12 @@ import {
   recoveryAccount,
   resetPassword,
   changePassword
-} from "./auth.controller";
+} from "./auth.controller.js";
 
-import { validate } from "../../middlewares/validate.middleware";
+import { validate } from "../../middlewares/validate.middleware.js";
 
-import { loginSchema, registerSchema,forgotPasswordSchema,resetPasswordSchema,changePasswordSchema,verifyAccountSchema,resendVerificationSchema,recoveryAccountSchema } from "../../validations/auth.validation";
-import { authMiddleware } from "../../middlewares/auth.middleware";
+import { loginSchema, registerSchema,forgotPasswordSchema,resetPasswordSchema,changePasswordSchema,verifyAccountSchema,resendVerificationSchema,recoveryAccountSchema } from "../../validations/auth.validation.js";
+import { authMiddleware } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
