@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Terminal, Shield, Share2, Code2 } from "lucide-react";
 import { toast } from "sonner";
-import { authService } from "@/service/auth.service";
+import { authService } from "@/services/auth.service";
 
 import { Button } from "@/components/ui/button";
 

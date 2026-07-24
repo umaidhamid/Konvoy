@@ -1,13 +1,9 @@
-import jwt,{ SignOptions } from "jsonwebtoken";
+import * as jwt from "jsonwebtoken";
+import type { SignOptions } from "jsonwebtoken";
 import { config } from "../config";
+import type { JwtPayload } from "../types/auth";
 
-interface TokenPayload {
-  userId: string;
-  email: string;
-  role: "admin" | "user";
-}
-
-export const generateAccessToken = (payload: TokenPayload) => {
+export const generateAccessToken = (payload: JwtPayload) => {
   return jwt.sign(
     payload,
     config.accessTokenSecret,
@@ -17,7 +13,7 @@ export const generateAccessToken = (payload: TokenPayload) => {
   );
 };
 
-export const generateRefreshToken = (payload: TokenPayload) => {
+export const generateRefreshToken = (payload: JwtPayload) => {
   return jwt.sign(
     payload,
     config.refreshTokenSecret,

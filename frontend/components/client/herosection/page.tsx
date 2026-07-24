@@ -1,3 +1,4 @@
+"use client"
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { INITIAL_FILES } from "@/Data/client/herosection/files";
@@ -11,11 +12,11 @@ const FILE_ICONS = {
     </svg>
   ),
   ".env": (
-    <svg className="w-3.5 h-3.5 text-warning" fill="currentColor" viewBox="0 0 20 20">
+    <svg className="w-3.5 h-3.5 text-primary" fill="currentColor" viewBox="0 0 20 20">
       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM11 6a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
     </svg>
   ),
-  "docker.yaml": (
+  "docker.yml": (
     <svg className="w-3.5 h-3.5 text-primary" fill="currentColor" viewBox="0 0 24 24">
       <path d="M13.983 11.078h2.119c.102 0 .186-.084.186-.186V8.774c0-.102-.084-.186-.186-.186h-2.119c-.102 0-.186.084-.186.186v2.118c0 .102.084.186.186.186zm-2.95.078h2.118c.102 0 .185-.084.185-.186V8.774c0-.102-.084-.186-.185-.186h-2.118c-.101 0-.186.084-.186.186v2.118c0 .102.085.186.186.186zm-2.95 0h2.118c.101 0 .185-.084.185-.186V8.774c0-.102-.084-.186-.185-.186H8.083c-.102 0-.186.084-.186.186v2.118c0 .102.084.186.186.186zm-2.948 0h2.118c.101 0 .185-.084.185-.186V8.774c0-.102-.084-.186-.185-.186H5.135c-.102 0-.186.084-.186.186v2.118c0 .102.084.186.186.186zm-2.95 0h2.119c.101 0 .185-.084.185-.186V8.774c0-.102-.084-.186-.185-.186H2.186c-.102 0-.186.084-.186.186v2.118c0 .102.084.186.186.186zm5.898-3.084h2.118c.101 0 .185-.083.185-.185V5.689c0-.102-.084-.186-.185-.186H8.083c-.102 0-.186.084-.186.186v2.119c0 .101.084.185.186.185zm-2.948 0h2.118c.101 0 .185-.083.185-.185V5.689c0-.102-.084-.186-.185-.186H5.135c-.102 0-.186.084-.186.186v2.119c0 .101.084.185.186.185zm0-3.085h2.118c.101 0 .185-.084.185-.186V2.603c0-.102-.084-.186-.185-.186H5.135c-.102 0-.186.084-.186.186v2.119c0 .101.084.186.186.186zm14.12 6.17c-.183-.012-.36-.102-.56-.233-.772-.518-1.5-.724-2.41-.724H1.424c-.21 0-.356.113-.417.31-.144.475-.157.942-.048 1.45.36 1.681 1.487 3.328 3.09 4.5 2.11 1.543 4.887 2.314 8.04 2.235 5.56-.14 9.774-3.4 10.306-7.884a2.766 2.766 0 00-.4-.654z"/>
     </svg>
@@ -62,39 +63,46 @@ export const Hero = () => {
             transition={{ duration: 0.5 }}
           >
             <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-card text-secondary text-xs font-semibold tracking-wide mb-6 shadow-xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-              v2.0 Workspace Live
+              <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+              Encrypted at rest
             </span>
-            
+
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-foreground leading-[1.15]">
-              Never Lose Your <br />
-              <span className="bg-gradient-to-r from-primary to-blue-500 bg-clip-text text-transparent">
-                Config Files
-              </span> Again
+              One place for every{" "}
+              <span className="text-primary">.env, config, and secret</span>{" "}
+              your projects need
             </h1>
           </motion.div>
 
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.5 }}
             className="text-base sm:text-lg text-secondary max-w-xl mx-auto lg:mx-0 font-normal leading-relaxed"
           >
-            Store, version, and instantly retrieve env files, Docker configurations, cloud templates, and secure API bindings from any machine.
+            Konvoy stores your project files in an encrypted vault, then hands them
+            back through a web editor or a single CLI command — no more emailing
+            .env files or copy-pasting secrets between machines.
           </motion.p>
-          
-          <motion.div 
+
+          <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.5 }}
             className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4"
           >
-            <button className="w-full sm:w-auto bg-primary text-primary-foreground hover:opacity-90 px-8 py-3.5 rounded-xl font-semibold shadow-md shadow-primary/10 hover:scale-[1.01] active:scale-[0.99] transition-all duration-150 cursor-pointer">
-              Get Started for Free
-            </button>
-            <button className="w-full sm:w-auto bg-background border border-border text-secondary hover:text-foreground hover:bg-card-hover px-8 py-3.5 rounded-xl font-semibold shadow-xs transition-all duration-150 cursor-pointer">
-              Read Docs
-            </button>
+            <a
+              href="/auth/register"
+              className="w-full sm:w-auto text-center bg-primary text-primary-foreground hover:opacity-90 px-8 py-3.5 rounded-xl font-semibold shadow-md shadow-primary/10 hover:scale-[1.01] active:scale-[0.99] transition-all duration-150 cursor-pointer"
+            >
+              Create your vault
+            </a>
+            <a
+              href="#cli"
+              className="w-full sm:w-auto text-center bg-background border border-border text-secondary hover:text-foreground hover:bg-card-hover px-8 py-3.5 rounded-xl font-semibold shadow-xs transition-all duration-150 cursor-pointer"
+            >
+              See the CLI
+            </a>
           </motion.div>
         </div>
 

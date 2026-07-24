@@ -4,6 +4,7 @@
 import Project from "../../models/projects.model";
 import ProjectFile from "../../models/ProjectFile.model";
 import { AppError } from "../../utils/AppError"; // swap for your own error class if different
+import { encrypt, decrypt } from "../../utils/encryption";
 export const projectFileService = {
   async getProjectFiles(slug: string, userId: string) {
     const project = await Project.findOne({ slug, userId });
@@ -44,7 +45,7 @@ export const projectFileService = {
       projectId: project._id,
       userId,
       name,
-      content: "",
+      content: encrypt(""),
     });
 
     return file;
@@ -53,7 +54,11 @@ export const projectFileService = {
   async getProjectFileById(id: string, userId: string) {
     const file = await ProjectFile.findOne({ _id: id, userId, isDeleted: false });
     if (!file) throw new AppError("File not found", 404);
-    return file;
+    const fileObj = file.toObject();
+
+fileObj.content = decrypt(file.content);
+
+return fileObj;
   },
 
   async updateProjectFileContent(id: string, userId: string, content: string) {
@@ -62,7 +67,7 @@ export const projectFileService = {
     const file = await ProjectFile.findOne({ _id: id, userId, isDeleted: false });
     if (!file) throw new AppError("File not found", 404);
 
-    file.content = content;
+file.content = encrypt(content);
     await file.save();
     return file;
   },

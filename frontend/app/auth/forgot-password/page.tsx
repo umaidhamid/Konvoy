@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Loader2, Terminal, Shield, Share2, Code2, ArrowLeft, KeyRound, Mail, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
-import { authService } from "@/service/auth.service";
+import { authService } from "@/services/auth.service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
