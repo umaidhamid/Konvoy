@@ -2,7 +2,7 @@
 // controllers/projectfile.controller.ts
 // ============================================
 import { Request, Response } from "express";
-import { projectFileService } from "./projectfile.service";
+import { projectFileService } from "./projectfile.service.js";
 
 const handleError = (res: Response, error: unknown) => {
   console.error(error);
@@ -15,7 +15,7 @@ const handleError = (res: Response, error: unknown) => {
 // Frontend: projectfilesService.getProjectFiles(slug) -> res.project, res.files
 export const getProjectFiles = async (req: Request, res: Response) => {
   try {
-    const { slug } = req.params;
+    const { slug } = req.params as { slug: string };
     const userId = req.user!.userId;
 
     const { project, files } = await projectFileService.getProjectFiles(slug, userId);
@@ -29,7 +29,7 @@ export const getProjectFiles = async (req: Request, res: Response) => {
 // Frontend: createProjectFile(slug, inputValue, content) -> res.data._id
 export const createProjectFile = async (req: Request, res: Response) => {
   try {
-    const { slug } = req.params;
+    const { slug } = req.params as { slug: string };
     const userId = req.user!.userId;
 
     const file = await projectFileService.createProjectFile(slug, userId, req.body);
@@ -44,7 +44,7 @@ export const createProjectFile = async (req: Request, res: Response) => {
 // Frontend: api.get(`/projectfile/single/${fileId}`) -> res.data.content
 export const getProjectFileById = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
     const userId = req.user!.userId;
 
     const file = await projectFileService.getProjectFileById(id, userId);
@@ -58,7 +58,7 @@ export const getProjectFileById = async (req: Request, res: Response) => {
 // Frontend uses this for BOTH save (content) and rename (name)
 export const updateProjectFile = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
     const userId = req.user!.userId;
     const { content, name } = req.body;
 
@@ -75,7 +75,7 @@ export const updateProjectFile = async (req: Request, res: Response) => {
 // DELETE /projectfile/:id
 export const deleteProjectFile = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
     const userId = req.user!.userId;
 
     await projectFileService.deleteProjectFile(id, userId);

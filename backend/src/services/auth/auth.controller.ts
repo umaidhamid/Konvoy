@@ -2,30 +2,32 @@ import { Request, Response } from "express";
 import {
   createRecoveryCode,
   verifyRecoveryCode,
-} from "../../utils/recoveryCode";
-import User from "../../models/users.model";
-import Session from "../../models/Session";
+} from "../../utils/recoveryCode.js";
+import User from "../../models/users.model.js";
+import Session from "../../models/Session.js";
 import * as crypto from "crypto";
-import { generateAccessToken, generateRefreshToken } from "../../utils/jwt";
-import type { JwtPayload } from "../../types/auth"; 
-import { hashToken } from "../../utils/hashToken";
+import { generateAccessToken, generateRefreshToken } from "../../utils/jwt.js";
+import type { JwtPayload } from "../../types/auth.js";
+import { hashToken } from "../../utils/hashToken.js";
 import {
   verificationEmailTemplate,
   forgotPasswordTemplate,
-} from "../../utils/emailTemplates";
-import { sendEmail } from "../../utils/sendEmail";
-import { hashPassword, comparePassword } from "../../utils/password";
+} from "../../utils/emailTemplates.js";
+import jwt from "jsonwebtoken";
+import { sendEmail } from "../../utils/sendEmail.js";
+import { hashPassword, comparePassword } from "../../utils/password.js";
 import {
   ACCESS_TOKEN_COOKIE_OPTIONS,
   REFRESH_TOKEN_COOKIE_OPTIONS,
   SESSION_EXPIRES_MS,
-} from "../../config/auth.config";
-import { config } from "../../config";
-import { AuthRequest } from "../../middlewares/auth.middleware";
+} from "../../config/auth.config.js";
+import { config } from "../../config.js";
+import { AuthRequest } from "../../middlewares/auth.middleware.js";
 
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
+    console.log(email,password)
     const user = await User.findOne({
       email: email.toLowerCase(),
     }).select("+passwordHash");
@@ -97,6 +99,7 @@ export const login = async (req: Request, res: Response) => {
   },
 });
   } catch (e) {
+      console.error("Login error:", e);
     return res.status(500).json({
       message: "Internal server error",
     });

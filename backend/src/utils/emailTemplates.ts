@@ -1,3 +1,33 @@
+const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+export const contactMessageTemplate = (
+  name: string,
+  email: string,
+  subject: string,
+  message: string
+) => {
+  return {
+    subject: `[Contact] ${escapeHtml(subject)}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
+        <h2>New contact form submission</h2>
+
+        <p><strong>Name:</strong> ${escapeHtml(name)}</p>
+        <p><strong>Email:</strong> ${escapeHtml(email)}</p>
+        <p><strong>Subject:</strong> ${escapeHtml(subject)}</p>
+
+        <p style="margin-top:20px; white-space: pre-wrap;">${escapeHtml(message)}</p>
+      </div>
+    `,
+  };
+};
+
 export const verificationEmailTemplate = (
   username: string,
   verificationLink: string
