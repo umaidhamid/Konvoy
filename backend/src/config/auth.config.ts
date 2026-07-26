@@ -15,7 +15,8 @@ export const SESSION_EXPIRES_MS =
 const commonCookieOptions: CookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
-  sameSite: "strict",
+  sameSite: "none",
+  path: "/",
 };
 
 export const ACCESS_TOKEN_COOKIE_OPTIONS: CookieOptions = {
