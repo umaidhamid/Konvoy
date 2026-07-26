@@ -9,7 +9,7 @@ export const validate = <T>(
     return schema.parse(data);
   } catch (error) {
     if (error instanceof ZodError) {
-      error.errors.forEach((err) => toast.error(err.message));
+      error.issues.forEach((issue) => toast.error(issue.message));
       return null;
     }
 

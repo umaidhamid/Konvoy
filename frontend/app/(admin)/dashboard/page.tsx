@@ -1,54 +1,109 @@
 "use client";
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Folder, FileText, ArrowUpRight, Plus } from 'lucide-react';
+import { Folder, Users, Bell, ArrowUpRight, Plus, Crown } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
+import { projectsService } from '@/services/projects.service';
+import { notificationsService } from '@/services/notifications.service';
+import { Project } from '@/types/project.types';
+import { Notification } from '@/types/notification.types';
+
+function timeAgo(dateString?: string) {
+  if (!dateString) return "";
+  const seconds = Math.floor((Date.now() - new Date(dateString).getTime()) / 1000);
+  if (seconds < 60) return "just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  return new Date(dateString).toLocaleDateString();
+}
 
 export default function DashboardPage() {
-    const { user, loading } = useAuth();
-    
-    const router = useRouter();
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [dataLoading, setDataLoading] = useState(true);
+
+  useEffect(() => {
     if (!loading && !user) {
-   router.push('/auth/login');
-  }
+      router.push('/auth/login');
+    }
+  }, [loading, user, router]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const load = async () => {
+      try {
+        const [projectsRes, notificationsRes] = await Promise.all([
+          projectsService.getProjects(),
+          notificationsService.getNotifications(),
+        ]);
+        if (projectsRes.success) setProjects(projectsRes.data);
+        if (notificationsRes.success) {
+          setNotifications(notificationsRes.data);
+          setUnreadCount(notificationsRes.unreadCount);
+        }
+      } catch (err) {
+        console.error("Failed to load dashboard data:", err);
+      } finally {
+        setDataLoading(false);
+      }
+    };
+
+    load();
+  }, [user]);
+
   if (loading) {
     return <h1>Loading...</h1>;
   }
-  // Stat Card Config
+
+  const ownedCount = projects.filter((p) => p.myRole === "owner").length;
+  const sharedCount = projects.length - ownedCount;
+
+  const collaboratorIds = new Set<string>();
+  for (const project of projects) {
+    if (project.myRole !== "owner" || !project.members) continue;
+    for (const member of project.members) {
+      const id = typeof member.userId === "string" ? member.userId : member.userId._id;
+      collaboratorIds.add(id);
+    }
+  }
+
   const stats = [
-    { title: 'Projects', value: '8', icon: Folder },
-    { title: 'Files', value: '42', icon: FileText },
-    { title: 'Favorites', value: '5', icon: null, badge: 'Later' },
-    { title: 'Last Updated', value: 'Today', icon: null, subtext: 'via Web UI' },
+    { title: 'Total Projects', value: String(projects.length), icon: Folder },
+    { title: 'Owned by You', value: String(ownedCount), icon: Crown },
+    { title: 'Shared with You', value: String(sharedCount), icon: Users },
+    { title: 'Unread Notifications', value: String(unreadCount), icon: Bell },
   ];
 
-  // Mock Data arrays strictly following your provided project schema
-  const recentFiles = [
-    { name: '.env', project: 'Portfolio' },
-    { name: 'docker-compose.yml', project: 'Node API' },
-    { name: 'next.config.js', project: 'Portfolio' },
-    { name: 'README.md', project: 'SaaS Starter' },
-  ];
+  const recentProjects = [...projects]
+    .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0).getTime() - new Date(a.updatedAt || a.createdAt || 0).getTime())
+    .slice(0, 5);
 
-  const recentProjects = [
-    { name: 'Portfolio', files: 3 },
-    { name: 'Node API', files: 2 },
-    { name: 'SaaS Starter', files: 1 },
-  ];
+  const recentActivity = notifications.slice(0, 5);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 p-6 md:p-8">
       {/* Upper Banner Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Overview</h1>
-          <p className="text-sm text-secondary">Manage your system configurations and micro-environments.</p>
+          <p className="text-sm text-muted-foreground">
+            {user ? `Welcome back, ${user.fullname || user.email}.` : "Manage your projects and team access."}
+          </p>
         </div>
         <div className="flex items-center gap-2">
-          <Link 
-            href="/dashboard/projects" 
-            className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground text-xs font-medium px-3 h-9 rounded-radius hover:opacity-90 transition-opacity"
+          <Link
+            href="/dashboard/projects"
+            className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground text-xs font-medium px-3 h-9 rounded-lg hover:opacity-90 transition-opacity"
           >
             <Plus className="w-3.5 h-3.5" /> New Project
           </Link>
@@ -60,19 +115,15 @@ export default function DashboardPage() {
         {stats.map((stat, idx) => {
           const Icon = stat.icon;
           return (
-            <div key={idx} className="bg-card border border-border p-5 rounded-radius relative overflow-hidden">
+            <div key={idx} className="bg-card border border-border p-5 rounded-lg relative overflow-hidden">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-muted">{stat.title}</span>
-                {Icon && <Icon className="w-4 h-4 text-muted/70" />}
-                {stat.badge && (
-                  <span className="text-[10px] font-mono bg-warning/10 text-warning px-1.5 py-0.5 rounded border border-warning/20">
-                    {stat.badge}
-                  </span>
-                )}
+                <span className="text-xs font-medium text-muted-foreground">{stat.title}</span>
+                <Icon className="w-4 h-4 text-muted-foreground/70" />
               </div>
               <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-2xl font-semibold tracking-tight">{stat.value}</span>
-                {stat.subtext && <span className="text-[11px] text-muted font-normal">{stat.subtext}</span>}
+                <span className="text-2xl font-semibold tracking-tight">
+                  {dataLoading ? "—" : stat.value}
+                </span>
               </div>
             </div>
           );
@@ -81,53 +132,66 @@ export default function DashboardPage() {
 
       {/* Main Data Split Panels */}
       <div className="grid md:grid-cols-2 gap-6">
-        
-        {/* Recent Files Panel */}
-        <div className="bg-card border border-border rounded-radius flex flex-col">
-          <div className="p-5 border-b border-border flex items-center justify-between">
-            <div>
-              <h2 className="text-sm font-semibold">Recent Files</h2>
-              <p className="text-xs text-muted">Quick access to context configurations.</p>
-            </div>
-            <Link href="/dashboard/files" className="text-xs text-primary flex items-center gap-0.5 hover:underline">
-              View all <ArrowUpRight className="w-3 h-3" />
-            </Link>
-          </div>
-          <div className="divide-y divide-border font-mono text-xs">
-            {recentFiles.map((file, idx) => (
-              <div key={idx} className="p-4 flex items-center justify-between hover:bg-card-hover transition-colors">
-                <div className="flex items-center gap-2.5">
-                  <FileText className="w-3.5 h-3.5 text-muted" />
-                  <span className="font-medium text-foreground">{file.name}</span>
-                </div>
-                <span className="text-[10px] text-muted bg-background px-2 py-0.5 rounded border border-border">
-                  {file.project}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
 
         {/* Recent Projects Panel */}
-        <div className="bg-card border border-border rounded-radius flex flex-col">
+        <div className="bg-card border border-border rounded-lg flex flex-col">
           <div className="p-5 border-b border-border flex items-center justify-between">
             <div>
               <h2 className="text-sm font-semibold">Recent Projects</h2>
-              <p className="text-xs text-muted">Logical storage vaults currently active.</p>
+              <p className="text-xs text-muted-foreground">Your most recently updated projects.</p>
             </div>
             <Link href="/dashboard/projects" className="text-xs text-primary flex items-center gap-0.5 hover:underline">
               View all <ArrowUpRight className="w-3 h-3" />
             </Link>
           </div>
           <div className="divide-y divide-border text-xs">
-            {recentProjects.map((proj, idx) => (
-              <div key={idx} className="p-4 flex items-center justify-between hover:bg-card-hover transition-colors">
-                <span className="font-medium font-mono text-foreground">{proj.name}</span>
-                <span className="text-xs text-secondary font-sans">
-                  {proj.files} {proj.files === 1 ? 'file' : 'files'}
-                </span>
-              </div>
-            ))}
+            {dataLoading ? (
+              <p className="p-4 text-muted-foreground">Loading...</p>
+            ) : recentProjects.length === 0 ? (
+              <p className="p-4 text-muted-foreground">No projects yet. Create your first one to get started.</p>
+            ) : (
+              recentProjects.map((project) => (
+                <Link
+                  key={project._id}
+                  href={`/dashboard/projects/${project.slug}`}
+                  className="p-4 flex items-center justify-between hover:bg-card-hover transition-colors"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Folder className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="font-medium text-foreground">{project.name}</span>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground bg-background px-2 py-0.5 rounded border border-border">
+                    {project.myRole === "owner" ? "Owner" : "Member"} · {timeAgo(project.updatedAt || project.createdAt)}
+                  </span>
+                </Link>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Recent Activity Panel */}
+        <div className="bg-card border border-border rounded-lg flex flex-col">
+          <div className="p-5 border-b border-border flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-semibold">Recent Activity</h2>
+              <p className="text-xs text-muted-foreground">Updates across your projects.</p>
+            </div>
+          </div>
+          <div className="divide-y divide-border text-xs">
+            {dataLoading ? (
+              <p className="p-4 text-muted-foreground">Loading...</p>
+            ) : recentActivity.length === 0 ? (
+              <p className="p-4 text-muted-foreground">No activity yet.</p>
+            ) : (
+              recentActivity.map((n) => (
+                <div key={n._id} className="p-4 flex items-start justify-between gap-3">
+                  <span className={n.read ? "text-muted-foreground" : "text-foreground font-medium"}>
+                    {n.message}
+                  </span>
+                  <span className="shrink-0 text-[10px] text-muted-foreground">{timeAgo(n.createdAt)}</span>
+                </div>
+              ))
+            )}
           </div>
         </div>
 

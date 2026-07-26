@@ -125,6 +125,44 @@ export const changePasswordSchema = z.object({
 });
 
 /* -------------------------------------------------------------------------- */
+/*                              REQUEST EMAIL CHANGE                          */
+/* -------------------------------------------------------------------------- */
+
+export const requestEmailChangeSchema = z.object({
+  body: z
+    .object({
+      newEmail: email,
+      password: loginPassword,
+    })
+    .strict(),
+});
+
+/* -------------------------------------------------------------------------- */
+/*                              CONFIRM EMAIL CHANGE                          */
+/* -------------------------------------------------------------------------- */
+
+export const confirmEmailChangeSchema = z.object({
+  body: z
+    .object({
+      email,
+      token,
+    })
+    .strict(),
+});
+
+/* -------------------------------------------------------------------------- */
+/*                           REGENERATE RECOVERY CODE                         */
+/* -------------------------------------------------------------------------- */
+
+export const regenerateRecoveryCodeSchema = z.object({
+  body: z
+    .object({
+      password: loginPassword,
+    })
+    .strict(),
+});
+
+/* -------------------------------------------------------------------------- */
 /*                              VERIFY ACCOUNT                                */
 /* -------------------------------------------------------------------------- */
 

@@ -11,7 +11,10 @@ const userSchema = new mongoose.Schema(
     unique: true,
   },
 
-  passwordHash: String,
+  passwordHash:{
+    type: String,
+    select: false,
+  },
 
   profileImage: {
     type: String,
@@ -36,6 +39,11 @@ const userSchema = new mongoose.Schema(
   // Forgot password
   resetPasswordToken: String,
   resetPasswordTokenExpiresAt: Date,
+
+  // Email change - new address is only applied once its confirmation link is clicked
+  pendingEmail: String,
+  pendingEmailToken: String,
+  pendingEmailTokenExpiresAt: Date,
 
   lastLoginAt: Date,
 

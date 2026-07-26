@@ -14,5 +14,8 @@
   "type": "commonjs",
   "devDependencies": {
     "concurrently": "^10.0.3"
+  },
+  "dependencies": {
+    "konvoy-cli": "^2.0.1"
   }
 }

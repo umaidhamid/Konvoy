@@ -2,7 +2,6 @@ import chalk from "chalk";
 import ora from "ora";
 import select from "@inquirer/select";
 import confirm from "@inquirer/confirm";
-import fs from "fs";
 import path from "path";
 import config from "../services/config.js";
 import {
@@ -10,14 +9,15 @@ import {
   getProjectFiles,
   getProjectFileContent,
 } from "../services/project.js";
+import { getUniqueFilePath, writeFileEnsuringDir } from "../services/fsutil.js";
 
 export async function projectsCommand() {
-  const spinner = ora("Fetching projects...").start();
+  let activeSpinner = ora("Fetching projects...").start();
 
   try {
     const projects = await getProjects();
 
-    spinner.succeed("Projects fetched");
+    activeSpinner.succeed("Projects fetched");
 
     if (!projects.length) {
       console.log(chalk.yellow("No projects found."));
@@ -35,14 +35,25 @@ export async function projectsCommand() {
     config.set("projectId", (selectedProject as any)._id);
     config.set("projectName", (selectedProject as any).name);
 
-    const connectSpinner = ora("Connecting project...").start();
+    activeSpinner = ora("Connecting project...").start();
 
     const project = await getProjectFiles((selectedProject as any).slug);
 
-    connectSpinner.succeed("Project selected");
+    activeSpinner.succeed("Project selected");
+
+    if (project.project.myRole) {
+      console.log(
+        chalk.gray(
+          `Your access: ${project.project.myRole === "owner" ? "Owner" : "✓ You have access"}`
+        )
+      );
+      if (project.project.myFileIds) {
+        console.log(chalk.gray(`Restricted to ${project.project.myFileIds.length} file(s) — showing only what you have access to.`));
+      }
+    }
 
     if (!project.files.length) {
-      console.log(chalk.yellow("No files found in this project."));
+      console.log(chalk.yellow("No files found in this project (or none you have access to)."));
       return;
     }
 
@@ -66,14 +77,15 @@ export async function projectsCommand() {
         return;
       }
 
-      const writeSpinner = ora("Writing files...").start();
+      activeSpinner = ora("Writing files...").start();
 
       for (const file of project.files) {
         const fileContent = await getProjectFileContent(file._id);
-        fs.writeFileSync(path.join(cwd, fileContent.name), fileContent.content ?? "");
+        const uniqueName = getUniqueFilePath(cwd, fileContent.name);
+        writeFileEnsuringDir(path.join(cwd, uniqueName), fileContent.content ?? "");
       }
 
-      writeSpinner.succeed(`Wrote ${project.files.length} file(s)`);
+      activeSpinner.succeed(`Wrote ${project.files.length} file(s)`);
 
       console.log();
       console.log(chalk.green(`Project: ${project.project.name}`));
@@ -89,10 +101,11 @@ export async function projectsCommand() {
       })),
     });
 
-    const filePath = path.join(cwd, (selectedFile as any).name);
+    const uniqueName = getUniqueFilePath(cwd, (selectedFile as any).name);
+    const filePath = path.join(cwd, uniqueName);
 
     const shouldCreate = await confirm({
-      message: `Create file "${(selectedFile as any).name}" at ${filePath}?`,
+      message: `Create file "${uniqueName}" at ${filePath}?`,
     });
 
     if (!shouldCreate) {
@@ -100,23 +113,26 @@ export async function projectsCommand() {
       return;
     }
 
-    const writeSpinner = ora("Writing file...").start();
+    activeSpinner = ora("Writing file...").start();
 
     const fileContent = await getProjectFileContent((selectedFile as any)._id);
-    fs.writeFileSync(filePath, fileContent.content ?? "");
+    writeFileEnsuringDir(filePath, fileContent.content ?? "");
 
-    writeSpinner.succeed("File created");
+    activeSpinner.succeed("File created");
 
     console.log();
-    console.log(chalk.green(`File: ${fileContent.name}`));
+    console.log(chalk.green(`File: ${uniqueName}`));
     console.log(chalk.gray(filePath));
   } catch (error: any) {
-    console.log();
+    const message = error.response?.data?.message || error.message;
 
-    if (error.response?.data?.message) {
-      console.log(chalk.red(error.response.data.message));
+    if (activeSpinner.isSpinning) {
+      activeSpinner.fail(chalk.red(message));
     } else {
-      console.log(chalk.red(error.message));
+      console.log();
+      console.log(chalk.red(message));
     }
+
+    process.exitCode = 1;
   }
 }

@@ -1,5 +1,5 @@
 "use client";
-import { authService } from "@/service/auth.service";
+import { authService } from "@/services/auth.service";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 export default function LogoutButton() {

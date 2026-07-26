@@ -22,11 +22,11 @@ export default function RegisterPage() {
   const router = useRouter();
 
   const [formData, setFormData] = useState({
-    fullName: "umaidkhan",
-    phone: "03001234567",
-    email: "umaid.hamid.in@gmail.com",
-    password: "Password123!",
-    confirmPassword: "Password123!",
+    fullName: "",
+    phone: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
   });
 
   const [showModal, setShowModal] = useState(false);

@@ -1,6 +1,9 @@
 import React from "react";
+import Link from "next/link";
 import AuthProvider from "@/providers/AuthProvider";
 import Sidebar from "@/components/admin/dashboard/Sidebar";
+import NotificationBell from "@/components/admin/dashboard/NotificationBell";
+import LogoutButton from "@/components/admin/dashboard/LogoutButton";
 
 export default function DashboardLayout({
   children,
@@ -24,6 +27,16 @@ export default function DashboardLayout({
               <span className="text-foreground font-medium tracking-wide">
                 Overview
               </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <NotificationBell />
+              <Link
+                href="/dashboard/settings"
+                className="px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Settings
+              </Link>
+              <LogoutButton />
             </div>
           </header>
 

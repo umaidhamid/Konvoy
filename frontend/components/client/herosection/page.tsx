@@ -2,10 +2,10 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { INITIAL_FILES } from "@/Data/client/herosection/files";
-
+type FilesMap = typeof INITIAL_FILES;
 // Map for file icons styled to look great across themes using text-muted and specific colors
-const FILE_ICONS = {
-  "next.config.js": (
+const FILE_ICONS: Partial<Record<keyof FilesMap, React.ReactNode>> = {
+    "next.config.js": (
     <svg className="w-3.5 h-3.5 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
       <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -24,18 +24,18 @@ const FILE_ICONS = {
 };
 
 export const Hero = () => {
-  const [activeFile, setActiveFile] = useState("next.config.js");
-  const [files, setFiles] = useState(INITIAL_FILES);
+  const [activeFile, setActiveFile] = useState<keyof FilesMap>("next.config.js");
+  const [files, setFiles] = useState<FilesMap>(INITIAL_FILES);
 
-  const handleTextChange = (e) => {
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setFiles({
       ...files,
+
       [activeFile]: e.target.value
     });
   };
 
-  const lineCount = files[activeFile]?.split("\n").length || 1;
-
+const lineCount = (files[activeFile] ?? "").split("\n").length;
   return (
     <section className="relative min-h-screen pt-36 pb-24 px-4 sm:px-6 lg:px-8 bg-background text-foreground overflow-hidden selection:bg-primary/10 selection:text-primary">
       
@@ -129,7 +129,7 @@ export const Hero = () => {
 
               {/* Theme Variable Controlled File Tabs */}
               <div className="flex items-center gap-1 overflow-x-auto no-scrollbar max-w-[70%] sm:max-w-none">
-                {Object.keys(files).map((fileName) => {
+                {(Object.keys(files) as Array<keyof FilesMap>).map((fileName) => {
                   const isActive = activeFile === fileName;
                   return (
                     <button

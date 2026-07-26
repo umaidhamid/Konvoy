@@ -3,9 +3,9 @@ import ora from "ora";
 import { loginPrompt } from "../prompts/login.js";
 import { login } from "../services/auth.js";
 export async function loginCommand() {
+    const credentials = await loginPrompt();
+    const spinner = ora("Logging in...").start();
     try {
-        const credentials = await loginPrompt();
-        const spinner = ora("Logging in...").start();
         const user = await login(credentials.domain, credentials.email, credentials.password);
         spinner.succeed("Logged in successfully");
         console.log();
@@ -13,13 +13,9 @@ export async function loginCommand() {
         console.log(chalk.gray(user.email));
     }
     catch (error) {
-        console.log();
-        if (error.response?.data?.message) {
-            console.log(chalk.red(error.response.data.message));
-        }
-        else {
-            console.log(chalk.red(error.message));
-        }
+        const message = error.response?.data?.message || error.message;
+        spinner.fail(chalk.red(message));
+        process.exitCode = 1;
     }
 }
 //# sourceMappingURL=login.js.map
