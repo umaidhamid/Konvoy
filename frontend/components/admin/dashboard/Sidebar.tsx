@@ -1,14 +1,15 @@
 "use client";
 
-import React from "react";
+import React, { useContext } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  FolderKanban, 
-  LayoutDashboard, 
-  Settings, 
-  UserCircle 
+import {
+  CreditCard,
+  FolderKanban,
+  LayoutDashboard,
+  Settings,
 } from "lucide-react";
+import { AuthContext } from "@/context/AuthContext";
 
 interface SidebarProps {
   className?: string;
@@ -17,12 +18,15 @@ interface SidebarProps {
 const navigationItems = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { name: "Projects", href: "/dashboard/projects", icon: FolderKanban },
-  { name: "Profile", href: "/dashboard/profile", icon: UserCircle },
+  { name: "Plans", href: "/dashboard/plans", icon: CreditCard },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
 export default function Sidebar({ className = "" }: SidebarProps) {
   const pathname = usePathname();
+  const { user } = useContext(AuthContext);
+  const displayName = user?.fullname || user?.email || "Account";
+  const initial = displayName.charAt(0).toUpperCase();
 
   return (
     <aside 
@@ -63,15 +67,26 @@ export default function Sidebar({ className = "" }: SidebarProps) {
       </nav>
 
       {/* User Footer Context */}
-      <div className="p-4 border-t border-sidebar-border flex items-center gap-3 bg-sidebar-accent/40">
-        <div className="w-8 h-8 rounded-full bg-sidebar-primary text-sidebar-primary-foreground flex items-center justify-center text-xs font-semibold">
-          U
-        </div>
+      <Link
+        href="/dashboard/settings"
+        className="p-4 border-t border-sidebar-border flex items-center gap-3 bg-sidebar-accent/40 hover:bg-sidebar-accent transition-colors"
+      >
+        {user?.profileImage ? (
+          <img
+            src={user.profileImage}
+            alt=""
+            className="w-8 h-8 rounded-full object-cover shrink-0"
+          />
+        ) : (
+          <div className="w-8 h-8 rounded-full bg-sidebar-primary text-sidebar-primary-foreground flex items-center justify-center text-xs font-semibold shrink-0">
+            {initial}
+          </div>
+        )}
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium truncate text-sidebar-foreground">Workspace Owner</p>
-          <p className="text-xs truncate text-primary font-medium">Active Node</p>
+          <p className="text-sm font-medium truncate text-sidebar-foreground">{displayName}</p>
+          {user?.email && <p className="text-xs truncate text-muted-foreground">{user.email}</p>}
         </div>
-      </div>
+      </Link>
     </aside>
   );
 }

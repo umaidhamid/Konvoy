@@ -1,11 +1,19 @@
 import mongoose from "mongoose";
 import slugify from "slugify";
 
+export interface IProjectMember {
+  userId: mongoose.Types.ObjectId;
+  role: "member";
+  // Empty/undefined = access to all files in the project. Non-empty = restricted to just these files.
+  fileIds: mongoose.Types.ObjectId[];
+}
+
 export interface IProject extends mongoose.Document {
   userId: mongoose.Types.ObjectId;
   name: string;
   slug: string;
   description: string;
+  members: IProjectMember[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -17,6 +25,17 @@ const projectSchema = new mongoose.Schema<IProject>(
       ref: "User",
       required: [true, "User is required"],
       index: true,
+    },
+    members: {
+      type: [
+        {
+          userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+          role: { type: String, enum: ["member"], default: "member" },
+          fileIds: { type: [mongoose.Schema.Types.ObjectId], ref: "ProjectFile", default: [] },
+          _id: false,
+        },
+      ],
+      default: [],
     },
     name: {
       type: String,

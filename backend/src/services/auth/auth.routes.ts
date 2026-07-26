@@ -11,12 +11,29 @@ import {
   verifyAccount,
   recoveryAccount,
   resetPassword,
-  changePassword
+  changePassword,
+  updateProfile,
+  uploadAvatar,
+  requestEmailChange,
+  confirmEmailChange,
+  regenerateRecoveryCode,
 } from "./auth.controller.js";
 
 import { validate } from "../../middlewares/validate.middleware.js";
 
-import { loginSchema, registerSchema,forgotPasswordSchema,resetPasswordSchema,changePasswordSchema,verifyAccountSchema,resendVerificationSchema,recoveryAccountSchema } from "../../validations/auth.validation.js";
+import {
+  loginSchema,
+  registerSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  changePasswordSchema,
+  verifyAccountSchema,
+  resendVerificationSchema,
+  recoveryAccountSchema,
+  requestEmailChangeSchema,
+  confirmEmailChangeSchema,
+  regenerateRecoveryCodeSchema,
+} from "../../validations/auth.validation.js";
 import { authMiddleware } from "../../middlewares/auth.middleware.js";
 
 const router = express.Router();
@@ -31,5 +48,10 @@ router.post("/resend-verification", validate(resendVerificationSchema), resendve
 router.post("/verify-account", validate(verifyAccountSchema), verifyAccount);
 router.post("/recover-account", validate(recoveryAccountSchema), recoveryAccount);
 router.post("/reset-password", validate(resetPasswordSchema), resetPassword);
-router.get("/change-password", authMiddleware, validate(changePasswordSchema), changePassword);
+router.put("/change-password", authMiddleware, validate(changePasswordSchema), changePassword);
+router.put("/update-profile", authMiddleware, updateProfile);
+router.post("/avatar", authMiddleware, uploadAvatar);
+router.post("/change-email", authMiddleware, validate(requestEmailChangeSchema), requestEmailChange);
+router.post("/confirm-email-change", validate(confirmEmailChangeSchema), confirmEmailChange);
+router.post("/regenerate-recovery-code", authMiddleware, validate(regenerateRecoveryCodeSchema), regenerateRecoveryCode);
 export default router;

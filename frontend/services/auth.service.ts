@@ -39,5 +39,31 @@ export const authService = {
   resetPassword: async (token: string, newPassword: string,email:string) => {
     const response = await api.post(`${baseUrl}/reset-password`, { token, newPassword,email });
     return response.data;
-  }, 
+  },
+  updateProfile: async (fullname: string) => {
+    const response = await api.put(`${baseUrl}/update-profile`, { fullname });
+    return response.data;
+  },
+  changePassword: async (currentPassword: string, newPassword: string) => {
+    const response = await api.put(`${baseUrl}/change-password`, { currentPassword, newPassword });
+    return response.data;
+  },
+  uploadAvatar: async (file: File) => {
+    const formData = new FormData();
+    formData.append("avatar", file);
+    const response = await api.post(`${baseUrl}/avatar`, formData);
+    return response.data;
+  },
+  requestEmailChange: async (newEmail: string, password: string) => {
+    const response = await api.post(`${baseUrl}/change-email`, { newEmail, password });
+    return response.data;
+  },
+  confirmEmailChange: async (token: string, email: string) => {
+    const response = await api.post(`${baseUrl}/confirm-email-change`, { token, email });
+    return response.data;
+  },
+  regenerateRecoveryCode: async (password: string) => {
+    const response = await api.post(`${baseUrl}/regenerate-recovery-code`, { password });
+    return response.data;
+  },
 };

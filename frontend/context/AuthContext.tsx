@@ -7,6 +7,7 @@ export interface User {
   fullname: string;
   username: string;
   email: string;
+  profileImage?: string;
 }
 
 interface AuthContextType {

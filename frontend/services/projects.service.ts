@@ -25,4 +25,16 @@ export const projectsService = {
     const response = await api.put<ApiResponse<Project>>(`${baseUrl}/update/${projectId}`, { name, description });
     return response.data;
   },
+  addMember: async (projectId: string, email: string) => {
+    const response = await api.post<ApiResponse<Project>>(`${baseUrl}/${projectId}/members`, { email });
+    return response.data;
+  },
+  removeMember: async (projectId: string, memberId: string) => {
+    const response = await api.delete<ApiResponse<Project>>(`${baseUrl}/${projectId}/members/${memberId}`);
+    return response.data;
+  },
+  leaveProject: async (projectId: string) => {
+    const response = await api.post<ApiResponse<null>>(`${baseUrl}/${projectId}/leave`);
+    return response.data;
+  },
 };

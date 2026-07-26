@@ -107,6 +107,48 @@ export const forgotPasswordEmailTemplate = (
     `,
   };
 };
+export const confirmEmailChangeTemplate = (
+  fullname: string,
+  newEmail: string,
+  confirmLink: string
+) => {
+  return {
+    subject: "Confirm your new email address",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
+        <h2>Hello ${fullname},</h2>
+
+        <p>
+          We received a request to change the email on your Konvoy account to
+          <strong>${newEmail}</strong>. Click the button below to confirm this change.
+        </p>
+
+        <a
+          href="${confirmLink}"
+          style="
+            display:inline-block;
+            padding:12px 24px;
+            background:#2563eb;
+            color:white;
+            text-decoration:none;
+            border-radius:6px;
+          "
+        >
+          Confirm New Email
+        </a>
+
+        <p style="margin-top:20px;">
+          If you did not request this change, you can safely ignore this email - your account email will not change.
+        </p>
+
+        <p>
+          This confirmation link will expire automatically.
+        </p>
+      </div>
+    `,
+  };
+};
+
 export const forgotPasswordTemplate = (
   fullname: string,
   resetLink: string

@@ -1,0 +1,167 @@
+# Konvoy CLI
+
+Command-line tool for syncing local files with your Konvoy projects, and for sharing projects with teammates.
+
+## Setup
+
+```bash
+konvoy login
+```
+
+Prompts for:
+- **Email**
+- **Password**
+
+The API domain is currently fixed to `http://localhost:5000/api/v1` (hardcoded in `src/prompts/login.ts`, no prompt for it right now).
+
+On success, your access/refresh tokens are stored locally so you don't need to log in again. On failure, the spinner shows the error and the command exits with a non-zero status code — nothing is saved.
+
+---
+
+## Commands
+
+### `konvoy login`
+Authenticates and stores your session locally. See [Setup](#setup) above.
+
+### `konvoy init`
+Links the **current folder** to a project. Run this once per folder if you want `konvoy status`/`konvoy leave` to remember which project it belongs to.
+
+Prompts:
+- **Create a new project** — enter a name + optional description → creates it on the backend. You become its owner.
+- **Link an existing project** — pick one from your project list (this includes projects you own *and* projects you've been added to as a team member).
+
+The link (which project a folder belongs to) is stored in the CLI's own local config on your machine, keyed by the folder's absolute path — **not** as a file inside the project folder. Nothing gets written into your repo, so there's nothing there for a collaborator (or `git`) to see, share, or edit.
+
+If the folder is already linked, `init` just reports that and does nothing else — it won't overwrite an existing link. Use `konvoy unlink` first if you want to switch projects.
+
+### `konvoy add`
+The controlled way to upload files. Shows a checklist so you choose exactly what goes up.
+
+1. Scans the current folder (see [exclusions](#whats-excluded-from-scans) below) and shows every file as a checkbox list.
+2. You tick the ones you want.
+3. Asks **which project** to upload them to — lists every project you have access to, plus a "+ Create a new project" option. This is asked fresh every run; it doesn't depend on `konvoy init`.
+4. For each selected file: if a file with that same relative path already exists on the project, you're asked to confirm the overwrite; otherwise it's created straight away.
+5. Prints a live result per file (`✓ Created`, `✓ Updated`, `- Skipped`, `✗ Failed: <reason>`) and a summary.
+
+### `konvoy push`
+The bulk way to upload files — **no checklist, uploads everything** it finds in the folder (respecting the same exclusions as `add`). Same "which project?" prompt and per-file overwrite confirmation as `add`. Use this when you want the whole folder synced in one shot; use `add` when you want to be selective.
+
+### `konvoy status`
+Prints which project the current folder is linked to (name, slug, path) and your **current** access on it, fetched live from the server (never cached locally — access can change at any time, so it's not something worth trusting a local file for).
+
+### `konvoy unlink`
+Forgets the link between the current folder and its project (removed from the CLI's local config). This does **not** remove your access to the project on the backend (use `konvoy leave` for that). Run this before `konvoy init` if you want to link the folder to a *different* project.
+
+### `konvoy pull`
+Downloads files **from** a project, independent of the `init`/`add`/`push` link.
+
+1. Lists your projects (owned + shared) → pick one.
+2. Prints your current access on that project. If your access is scoped to specific files rather than the whole project, it also tells you how many files you can see — the file list you're shown is already filtered to just those.
+3. Choose **Entire project** (writes every file you have access to) or **A particular file** (pick one from what you can see).
+4. Confirms before writing.
+5. If a file with that name already exists locally, it's saved as `name-copy1.ext`, `name-copy2.ext`, etc. instead of overwriting your existing file.
+
+### `konvoy share`
+Invite a teammate to one of your projects by email — with control over which files they can see:
+
+1. Lists the projects **you own** (only owners can invite) → pick one.
+2. Fetches that project's file list and asks: **all files** or **specific file(s) only** (checkbox picker).
+3. Enter their email.
+
+They're added instantly (no accept step) and get an email notification; the project immediately shows up in their `konvoy pull` list and dashboard, already filtered to whatever file scope you gave them. There's no separate "role" to choose — anyone you add can view and edit whatever is in their scope (see [Team access](#team-access) below).
+
+> Note: file-scope restriction only limits which *existing* files a member can see/edit — it does not currently stop a member from creating brand-new files in the project.
+
+### `konvoy leave`
+Leave the **linked** project — removes your own access without needing the owner to do it. Asks for confirmation first, then removes you server-side and forgets the local link. If you're the project owner, it refuses (owners can't leave their own project — use `konvoy delete-project` instead).
+
+### `konvoy delete-project`
+Permanently deletes a project you own, and every file in it, for every member. Lists only projects you own, asks for confirmation (defaults to "no"), and clears the local link if the deleted project happened to be linked to the current folder. This cannot be undone.
+
+### `konvoy delete-file`
+Permanently deletes one or more files from any project you have access to. Pick the project, tick the file(s) to remove, confirm (defaults to "no"). Prints a result per file and a summary. This cannot be undone.
+
+---
+
+## Team access
+
+Every project has one **owner** plus any number of **members**. There's no separate editor/viewer role — anyone added to a project can view and edit whatever is in their access scope:
+
+| Access | Can view/pull files | Can push/edit/create files | Can invite/remove members | Can delete/rename project |
+|--------|----------------------|------------------------------|-----------------------------|------------------------------|
+| owner  | ✅ (all files)        | ✅                            | ✅                           | ✅                            |
+| member | ✅ (scoped or all)    | ✅ (scoped or all)            | ❌                           | ❌                            |
+
+**Access is enforced on the backend**, using the live database state on every request — never a locally-cached value. `konvoy status`, `konvoy push`, and `konvoy add` all re-check your current access with the server before acting, so if an owner has removed you since you last ran a command, you'll get an immediate, accurate error instead of a pile of failed uploads.
+
+**File scope** (set at invite time via `konvoy share`) limits *which files* a member can see and act on at all — `getProjectFiles`/`pull` only ever returns the files in scope, and trying to open/edit a file outside that scope 404s as if it didn't exist.
+
+Use `konvoy share` (owner only) to add someone with a specific file scope, and `konvoy leave` (member) to remove yourself, or `konvoy delete-project` (owner) to remove everyone.
+
+---
+
+## What's excluded from scans
+
+`add` and `push` both skip:
+- Directories: `node_modules`, `.git`, `dist`, `build`, `.next`, `out`, `.konvoy`
+- Files: `.konvoy.json`, `.env`, `.DS_Store`
+- Binary-ish extensions: images, video, audio, archives, fonts, `.pdf`
+- Any file over 2MB
+
+**Known gap:** the `.env` exclusion only matches a file literally named `.env` — a file like `myproject.env` is *not* excluded and will be uploaded. Be careful with secrets in oddly-named env files until this is fixed.
+
+---
+
+## Typical workflows
+
+**Upload a project, being selective:**
+```bash
+konvoy login
+cd my-project
+konvoy add        # tick the files, pick the project, repeat whenever you edit something
+```
+
+**Upload everything at once:**
+```bash
+cd my-project
+konvoy push       # pick the project, confirm, done
+```
+
+**Pull someone else's project down:**
+```bash
+konvoy login
+mkdir new-folder && cd new-folder
+konvoy pull   # pick project → "Entire project"
+```
+
+**Bring a teammate onto a project:**
+```bash
+konvoy share   # pick project (from ones you own), all files or specific ones, then their email
+```
+
+**Step away from a shared project:**
+```bash
+konvoy leave   # only works in a folder linked via `konvoy init`
+```
+
+**Delete a project you own:**
+```bash
+konvoy delete-project
+```
+
+**Remove specific files from a project:**
+```bash
+konvoy delete-file
+```
+
+---
+
+## Roadmap (not built yet)
+
+- **`konvoy push --dry-run`** — preview what would be created/updated/skipped before actually uploading anything.
+- **`konvoy logout`** — clear stored credentials from this machine (currently there's no way to log out from the CLI).
+- **Fix the `.env` exclusion** to match any `*.env` file, not just the literal `.env`.
+- **Respect `.gitignore`** when scanning, instead of a fixed exclusion list.
+- **`konvoy members`** — list/remove members of a project from the CLI (currently only possible from the frontend dashboard, plus `share` to add and `leave` to self-remove).
+- **Frontend "Share" modal doesn't yet support file-scope selection** — it can only grant access to the whole project. The CLI (`konvoy share`) is currently the only way to scope a member to specific files.
+- **File-scope doesn't block file creation** — a scoped member can still create new files outside their granted set; only existing-file access is scoped.
