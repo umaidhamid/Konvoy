@@ -15,7 +15,7 @@ export const sendContactMessage = async (req: Request, res: Response) => {
     );
 
     await sendEmail({
-      to: config.emailUser,
+      to: config.contactEmail,
       subject: emailSubject,
       html,
     });

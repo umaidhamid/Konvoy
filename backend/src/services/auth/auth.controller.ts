@@ -14,7 +14,11 @@ import {
   forgotPasswordTemplate,
   confirmEmailChangeTemplate,
 } from "../../utils/emailTemplates.js";
-import { uploadAvatarBuffer, extractAvatarPublicId, deleteAvatar } from "../../utils/cloudinary.js";
+import {
+  uploadAvatarBuffer,
+  extractAvatarPublicId,
+  deleteAvatar,
+} from "../../utils/cloudinary.js";
 import { avatarUpload } from "../../middlewares/upload.middleware.js";
 import jwt from "jsonwebtoken";
 import { sendEmail } from "../../utils/sendEmail.js";
@@ -26,7 +30,9 @@ import {
 } from "../../config/auth.config.js";
 import { config } from "../../config.js";
 import { AuthRequest } from "../../middlewares/auth.middleware.js";
+import { Resend } from "resend";
 
+const resend = new Resend(config.resendApiKey);
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
@@ -62,7 +68,8 @@ export const login = async (req: Request, res: Response) => {
     if (!user.isVerified) {
       return res.status(401).json({
         code: "ACCOUNT_NOT_VERIFIED",
-        message: "Your account is not verified. Please verify your email first.",
+        message:
+          "Your account is not verified. Please verify your email first.",
       });
     }
     const payload: JwtPayload = {
@@ -90,19 +97,19 @@ export const login = async (req: Request, res: Response) => {
     user.lastLoginAt = new Date();
     await user.save();
 
-   return res.status(200).json({
-  success: true,
-  accessToken,
-  refreshToken,
-  user: {
-    id: user._id,
-    fullname: user.fullname,
-    email: user.email,
-    profileImage: user.profileImage,
-  },
-});
+    return res.status(200).json({
+      success: true,
+      accessToken,
+      refreshToken,
+      user: {
+        id: user._id,
+        fullname: user.fullname,
+        email: user.email,
+        profileImage: user.profileImage,
+      },
+    });
   } catch (e) {
-      console.error("Login error:", e);
+    console.error("Login error:", e);
     return res.status(500).json({
       message: "Internal server error.",
     });
@@ -124,7 +131,10 @@ export const refresh = async (req: Request, res: Response) => {
 
     let decoded: JwtPayload;
     try {
-      decoded = jwt.verify(refreshToken, config.refreshTokenSecret) as JwtPayload;
+      decoded = jwt.verify(
+        refreshToken,
+        config.refreshTokenSecret,
+      ) as JwtPayload;
     } catch (err) {
       // Clean up the stale cookie regardless of which JWT error this is
       res.clearCookie("accessToken", ACCESS_TOKEN_COOKIE_OPTIONS);
@@ -234,12 +244,14 @@ export const register = async (req: Request, res: Response) => {
   try {
     const { fullname, phoneNumber, email, password } = req.body;
 
-
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
       return res
         .status(409)
-        .json({ success: false, message: "An account with this email already exists." });
+        .json({
+          success: false,
+          message: "An account with this email already exists.",
+        });
     }
 
     const hashedPassword = await hashPassword(password);
@@ -301,68 +313,77 @@ export const register = async (req: Request, res: Response) => {
     });
   }
 };
-  export const isAuth = async (req: AuthRequest, res: Response) => {
-    try {
-      const user = await User.findById(req.user?.userId).select(
-        "_id fullname email profileImage isVerified isDeactivated",
-      );
+export const isAuth = async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await User.findById(req.user?.userId).select(
+      "_id fullname email profileImage isVerified isDeactivated",
+    );
 
-      if (!user) {
-        return res.status(404).json({
-          success: false,
-          code: "USER_NOT_FOUND",
-          message: "User not found.",
-        });
-      }
-
-      if (user.isDeactivated || !user.isVerified) {
-        return res.status(401).json({
-          success: false,
-          code: "ACCOUNT_INACTIVE",
-          message: "Account is inactive or not verified.",
-        });
-      }
-
-      return res.status(200).json({
-        success: true,
-        user: {
-          id: user._id,
-          fullname: user.fullname,
-          email: user.email,
-          profileImage: user.profileImage,
-        },
-      });
-    } catch (error) {
-      return res.status(500).json({
+    if (!user) {
+      return res.status(404).json({
         success: false,
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Internal server error.",
+        code: "USER_NOT_FOUND",
+        message: "User not found.",
       });
     }
-  };
+
+    if (user.isDeactivated || !user.isVerified) {
+      return res.status(401).json({
+        success: false,
+        code: "ACCOUNT_INACTIVE",
+        message: "Account is inactive or not verified.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      user: {
+        id: user._id,
+        fullname: user.fullname,
+        email: user.email,
+        profileImage: user.profileImage,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Internal server error.",
+    });
+  }
+};
 
 export const updateProfile = async (req: AuthRequest, res: Response) => {
   try {
     const { fullname } = req.body;
 
     if (!fullname?.trim()) {
-      return res.status(400).json({ success: false, message: "Full name is required." });
+      return res
+        .status(400)
+        .json({ success: false, message: "Full name is required." });
     }
 
     const user = await User.findByIdAndUpdate(
       req.user?.userId,
       { fullname: fullname.trim() },
-      { new: true }
+      { new: true },
     ).select("_id fullname email profileImage");
 
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found." });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found." });
     }
 
     return res.status(200).json({
       success: true,
       message: "Profile updated successfully.",
-      user: { id: user._id, fullname: user.fullname, email: user.email, profileImage: user.profileImage },
+      user: {
+        id: user._id,
+        fullname: user.fullname,
+        email: user.email,
+        profileImage: user.profileImage,
+      },
     });
   } catch (error: any) {
     return res.status(500).json({
@@ -384,12 +405,18 @@ export const uploadAvatar = async (req: AuthRequest, res: Response) => {
 
     const file = (req as any).file as Express.Multer.File | undefined;
     if (!file) {
-      return res.status(400).json({ success: false, message: "No avatar file was provided." });
+      return res
+        .status(400)
+        .json({ success: false, message: "No avatar file was provided." });
     }
 
-    const user = await User.findById(req.user?.userId).select("_id fullname email profileImage");
+    const user = await User.findById(req.user?.userId).select(
+      "_id fullname email profileImage",
+    );
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found." });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found." });
     }
 
     const oldPublicId = extractAvatarPublicId(user.profileImage);
@@ -406,10 +433,16 @@ export const uploadAvatar = async (req: AuthRequest, res: Response) => {
     return res.status(200).json({
       success: true,
       message: "Profile picture updated successfully.",
-      user: { id: user._id, fullname: user.fullname, email: user.email, profileImage: user.profileImage },
+      user: {
+        id: user._id,
+        fullname: user.fullname,
+        email: user.email,
+        profileImage: user.profileImage,
+      },
     });
   } catch (error: any) {
-    const status = error.statusCode || (error.code === "LIMIT_FILE_SIZE" ? 400 : 500);
+    const status =
+      error.statusCode || (error.code === "LIMIT_FILE_SIZE" ? 400 : 500);
     const message =
       error.code === "LIMIT_FILE_SIZE"
         ? "Avatar must be 2MB or smaller."
@@ -436,7 +469,8 @@ export const forgotPassword = async (req: Request, res: Response) => {
     if (!user.isVerified) {
       return res.status(401).json({
         success: false,
-        message: "Your account is not verified. Please verify your account first.",
+        message:
+          "Your account is not verified. Please verify your account first.",
       });
     }
 
@@ -541,38 +575,63 @@ export const requestEmailChange = async (req: AuthRequest, res: Response) => {
     const { newEmail, password } = req.body;
     const normalizedNewEmail = String(newEmail).trim().toLowerCase();
 
-    const user = await User.findById(req.user?.userId).select("+passwordHash fullname email");
+    const user = await User.findById(req.user?.userId).select(
+      "+passwordHash fullname email",
+    );
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found." });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found." });
     }
-   console.log({
-    user,
+    console.log({
+      user,
       password,
       passwordHash: user.passwordHash,
     });
-    const isPasswordCorrect = await comparePassword(password, user.passwordHash!);
+    const isPasswordCorrect = await comparePassword(
+      password,
+      user.passwordHash!,
+    );
     if (!isPasswordCorrect) {
-      return res.status(400).json({ success: false, message: "Password is incorrect." });
+      return res
+        .status(400)
+        .json({ success: false, message: "Password is incorrect." });
     }
 
     if (normalizedNewEmail === user.email) {
-      return res.status(400).json({ success: false, message: "That's already your current email." });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "That's already your current email.",
+        });
     }
 
     const existingUser = await User.findOne({ email: normalizedNewEmail });
     if (existingUser) {
-      return res.status(409).json({ success: false, message: "An account with this email already exists." });
+      return res
+        .status(409)
+        .json({
+          success: false,
+          message: "An account with this email already exists.",
+        });
     }
 
     const changeToken = crypto.randomBytes(32).toString("hex");
- 
+
     user.pendingEmail = normalizedNewEmail;
     user.pendingEmailToken = changeToken;
-    user.pendingEmailTokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    user.pendingEmailTokenExpiresAt = new Date(
+      Date.now() + 24 * 60 * 60 * 1000,
+    );
     await user.save();
 
     const confirmLink = `${config.FRONTEND_URL}/verify-email-change?token=${changeToken}&email=${user.email}`;
-    const mail = confirmEmailChangeTemplate(user.fullname as string, normalizedNewEmail, confirmLink);
+    const mail = confirmEmailChangeTemplate(
+      user.fullname as string,
+      normalizedNewEmail,
+      confirmLink,
+    );
 
     await sendEmail({
       to: normalizedNewEmail,
@@ -606,23 +665,40 @@ export const confirmEmailChange = async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      return res.status(401).json({ success: false, message: "Invalid or expired confirmation link." });
+      return res
+        .status(401)
+        .json({
+          success: false,
+          message: "Invalid or expired confirmation link.",
+        });
     }
 
     if (
       !user.pendingEmailTokenExpiresAt ||
       user.pendingEmailTokenExpiresAt.getTime() < Date.now()
     ) {
-      return res.status(400).json({ success: false, message: "Confirmation link has expired." });
+      return res
+        .status(400)
+        .json({ success: false, message: "Confirmation link has expired." });
     }
 
     if (!user.pendingEmail) {
-      return res.status(400).json({ success: false, message: "No pending email change found." });
+      return res
+        .status(400)
+        .json({ success: false, message: "No pending email change found." });
     }
 
-    const emailTaken = await User.findOne({ email: user.pendingEmail, _id: { $ne: user._id } });
+    const emailTaken = await User.findOne({
+      email: user.pendingEmail,
+      _id: { $ne: user._id },
+    });
     if (emailTaken) {
-      return res.status(409).json({ success: false, message: "An account with this email already exists." });
+      return res
+        .status(409)
+        .json({
+          success: false,
+          message: "An account with this email already exists.",
+        });
     }
 
     user.email = user.pendingEmail;
@@ -646,18 +722,28 @@ export const confirmEmailChange = async (req: Request, res: Response) => {
 };
 
 // POST /auth/regenerate-recovery-code
-export const regenerateRecoveryCode = async (req: AuthRequest, res: Response) => {
+export const regenerateRecoveryCode = async (
+  req: AuthRequest,
+  res: Response,
+) => {
   try {
     const { password } = req.body;
 
     const user = await User.findById(req.user?.userId).select("+passwordHash");
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found." });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found." });
     }
 
-    const isPasswordCorrect = await comparePassword(password, user.passwordHash!);
+    const isPasswordCorrect = await comparePassword(
+      password,
+      user.passwordHash!,
+    );
     if (!isPasswordCorrect) {
-      return res.status(400).json({ success: false, message: "Password is incorrect." });
+      return res
+        .status(400)
+        .json({ success: false, message: "Password is incorrect." });
     }
 
     const { code, hash: hashedCode } = await createRecoveryCode();
@@ -683,7 +769,6 @@ export const regenerateRecoveryCode = async (req: AuthRequest, res: Response) =>
 export const resendverifytoken = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
-
 
     const user = await User.findOne({
       email: email.toLowerCase(),
@@ -718,7 +803,7 @@ export const resendverifytoken = async (req: Request, res: Response) => {
 
     await user.save();
 
-    const verificationLink = `${config.FRONTEND_URL}/verify-email/${newVerificationToken}&email=${user.email}`;
+    const verificationLink = `${config.FRONTEND_URL}/verify?token=${newVerificationToken}&email=${user.email}`;
 
     const mail = verificationEmailTemplate(
       user.fullname as string,
@@ -791,7 +876,13 @@ export const verifyAccount = async (req: Request, res: Response) => {
     user.verificationTokenExpiresAt = undefined;
 
     await user.save();
-
+    await resend.events.send({
+      event: "welcome_mail",
+      email: user.email!,
+      payload: {  
+        full_name: user.fullname,
+      },
+    });
     return res.status(200).json({
       success: true,
       message: "Account verified successfully.",
@@ -832,7 +923,8 @@ export const recoveryAccount = async (req: Request, res: Response) => {
     if (!user.isVerified) {
       return res.status(403).json({
         success: false,
-        message: "Your account is not verified. Please verify your account first.",
+        message:
+          "Your account is not verified. Please verify your account first.",
       });
     }
 
@@ -846,7 +938,8 @@ export const recoveryAccount = async (req: Request, res: Response) => {
     if (user.recoveryCode.used) {
       return res.status(400).json({
         success: false,
-        message: "Recovery code has already been used. Please request a new one.",
+        message:
+          "Recovery code has already been used. Please request a new one.",
       });
     }
     const cleanedCode = recoveryCode.trim().replace(/\s+/g, "");
@@ -914,7 +1007,8 @@ export const resetPassword = async (req: Request, res: Response) => {
     if (!user.isVerified) {
       return res.status(403).json({
         success: false,
-        message: "Your account is not verified. Please verify your account first.",
+        message:
+          "Your account is not verified. Please verify your account first.",
       });
     }
     if (

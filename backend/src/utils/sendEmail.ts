@@ -1,4 +1,8 @@
-    import { transporter } from "../config/mailer.js";
+import { Resend } from "resend";
+import { config } from "../config.js";
+
+const resend = new Resend(config.resendApiKey);
+
 interface SendEmailOptions {
   to: string;
   subject: string;
@@ -10,9 +14,10 @@ export const sendEmail = async ({
   subject,
   html,
 }: SendEmailOptions) => {
-  await transporter.sendMail({
-    from: `"Konvoy" <${process.env.EMAIL_USER}>`,
+  return await resend.emails.send({
+    from: config.resendFromEmail,
     to,
+    replyTo: config.replyToEmail,
     subject,
     html,
   });
