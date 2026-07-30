@@ -2,6 +2,7 @@ import User from "../../models/users.model.js";
 import Project from "../../models/projects.model.js";
 import ProjectFile from "../../models/ProjectFile.model.js";
 import AdminLog from "../../models/adminLog.model.js";
+import Plan, { IPlanPricingOption } from "../../models/plan.model.js";
 import { notify } from "../notifications/notification.service.js";
 
 const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -16,7 +17,7 @@ const parsePagination = (req: any) => {
 const logAdminAction = (
   actorId: string,
   action: string,
-  targetType: "user" | "project",
+  targetType: "user" | "project" | "plan",
   targetId: string,
   details: string
 ) => {
@@ -28,8 +29,9 @@ const logAdminAction = (
 export const getAllUsers = async (req: any, res: any) => {
   try {
     const { page, limit, search } = parsePagination(req);
+    const planStatus = req.query.planStatus; // "active" | "expired" | undefined (= all)
 
-    const filter = search
+    const filter: any = search
       ? {
           $or: [
             { fullname: { $regex: escapeRegex(search), $options: "i" } },
@@ -38,9 +40,17 @@ export const getAllUsers = async (req: any, res: any) => {
         }
       : {};
 
+    if (planStatus === "expired") {
+      filter.planExpiresAt = { $lt: new Date() };
+    } else if (planStatus === "active") {
+      filter.planId = { $ne: null };
+      filter.$and = [{ $or: [{ planExpiresAt: null }, { planExpiresAt: { $gte: new Date() } }] }];
+    }
+
     const [users, total] = await Promise.all([
       User.find(filter)
-        .select("fullname email role isVerified isDeactivated deactivationNote profileImage lastLoginAt createdAt")
+        .select("fullname email role isVerified isDeactivated deactivationNote profileImage lastLoginAt createdAt planId planExpiresAt")
+        .populate("planId", "name")
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(limit),
@@ -517,6 +527,240 @@ export const getAdminLogs = async (_req: any, res: any) => {
     return res.status(200).json({
       success: true,
       data: logs,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Something went wrong.",
+    });
+  }
+};
+
+// GET /admin/plans - unpaginated, plans are admin-curated and low cardinality
+export const getAllPlans = async (_req: any, res: any) => {
+  try {
+    const plans = await Plan.find().sort({ createdAt: 1 });
+
+    const userCounts = await User.aggregate([
+      { $match: { planId: { $ne: null } } },
+      { $group: { _id: "$planId", count: { $sum: 1 } } },
+    ]);
+    const userCountByPlan = new Map(userCounts.map((u: any) => [String(u._id), u.count]));
+
+    const data = plans.map((p) => ({
+      ...p.toObject(),
+      userCount: userCountByPlan.get(String(p._id)) || 0,
+    }));
+
+    return res.status(200).json({ success: true, data });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Something went wrong.",
+    });
+  }
+};
+
+// POST /admin/plans
+export const createPlan = async (req: any, res: any) => {
+  try {
+    const {
+      name,
+      priceLabel,
+      priceSuffix,
+      description,
+      features,
+      maxFileSizeBytes,
+      maxFilesPerProject,
+      maxProjectsPerUser,
+      maxStorageBytes,
+      maxMembersPerProject,
+      pricingOptions,
+      isHidden,
+      isDefault,
+      isActive,
+    } = req.body;
+
+    const existing = await Plan.findOne({ name });
+    if (existing) {
+      return res.status(409).json({ success: false, message: "A plan with this name already exists." });
+    }
+
+    if (isDefault) {
+      await Plan.updateMany({ isDefault: true }, { isDefault: false });
+    }
+
+    const plan = await Plan.create({
+      name,
+      priceLabel,
+      priceSuffix,
+      description,
+      features,
+      maxFileSizeBytes,
+      maxFilesPerProject,
+      maxProjectsPerUser,
+      maxStorageBytes,
+      maxMembersPerProject,
+      pricingOptions: pricingOptions || [],
+      isHidden: !!isHidden,
+      isDefault: !!isDefault,
+      isActive: isDefault ? true : isActive ?? true,
+    });
+
+    logAdminAction(req.user.userId, "plan_created", "plan", plan._id.toString(), `Created plan "${plan.name}".`);
+
+    return res.status(201).json({
+      success: true,
+      message: "Plan created successfully.",
+      data: plan,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Something went wrong.",
+    });
+  }
+};
+
+// PUT /admin/plans/:planId
+export const updatePlan = async (req: any, res: any) => {
+  try {
+    const { planId } = req.params;
+    const updates = { ...req.body };
+
+    if (updates.name) {
+      const existing = await Plan.findOne({ name: updates.name, _id: { $ne: planId } });
+      if (existing) {
+        return res.status(409).json({ success: false, message: "A plan with this name already exists." });
+      }
+    }
+
+    if (updates.isDefault) {
+      await Plan.updateMany({ _id: { $ne: planId }, isDefault: true }, { isDefault: false });
+      updates.isActive = true;
+    }
+
+    const plan = await Plan.findByIdAndUpdate(planId, updates, { new: true, runValidators: true });
+    if (!plan) {
+      return res.status(404).json({ success: false, message: "Plan not found." });
+    }
+
+    logAdminAction(req.user.userId, "plan_updated", "plan", plan._id.toString(), `Updated plan "${plan.name}".`);
+
+    return res.status(200).json({
+      success: true,
+      message: "Plan updated successfully.",
+      data: plan,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Something went wrong.",
+    });
+  }
+};
+
+// DELETE /admin/plans/:planId
+export const deletePlan = async (req: any, res: any) => {
+  try {
+    const { planId } = req.params;
+
+    const plan = await Plan.findById(planId);
+    if (!plan) {
+      return res.status(404).json({ success: false, message: "Plan not found." });
+    }
+
+    const assignedCount = await User.countDocuments({ planId });
+    if (assignedCount > 0) {
+      return res.status(409).json({
+        success: false,
+        message: `Cannot delete "${plan.name}" - it's assigned to ${assignedCount} user(s). Reassign those users first, or set this plan to inactive instead of deleting it.`,
+      });
+    }
+
+    await plan.deleteOne();
+
+    logAdminAction(req.user.userId, "plan_deleted", "plan", planId, `Deleted plan "${plan.name}".`);
+
+    return res.status(200).json({
+      success: true,
+      message: "Plan deleted successfully.",
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Something went wrong.",
+    });
+  }
+};
+
+// PATCH /admin/users/:userId/plan - body: { planId: string | null, durationMonths?: number }
+export const setUserPlan = async (req: any, res: any) => {
+  try {
+    const { userId } = req.params;
+    const { planId, durationMonths } = req.body;
+
+    let plan = null;
+    let planExpiresAt: Date | null = null;
+
+    if (planId) {
+      plan = await Plan.findById(planId);
+      if (!plan) {
+        return res.status(404).json({ success: false, message: "Plan not found." });
+      }
+      if (!plan.isActive) {
+        return res.status(400).json({ success: false, message: "This plan is inactive and can't be newly assigned." });
+      }
+
+      if (plan.pricingOptions.length > 0) {
+        const option = plan.pricingOptions.find((o: IPlanPricingOption) => o.durationMonths === durationMonths);
+        if (!option) {
+          return res.status(400).json({
+            success: false,
+            message: `Choose one of this plan's durations: ${plan.pricingOptions
+              .map((o: IPlanPricingOption) => `${o.durationMonths}mo`)
+              .join(", ")}.`,
+          });
+        }
+        planExpiresAt = new Date();
+        planExpiresAt.setMonth(planExpiresAt.getMonth() + option.durationMonths);
+      }
+      // pricingOptions empty (e.g. the default/free plan) -> planExpiresAt stays null (never expires)
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { planId: planId || null, planExpiresAt },
+      { new: true }
+    )
+      .select("email fullname planId planExpiresAt")
+      .populate("planId", "name");
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found." });
+    }
+
+    const expiryNote = planExpiresAt ? ` (expires ${planExpiresAt.toLocaleDateString()})` : "";
+    await notify(
+      user._id.toString(),
+      "plan_changed",
+      plan
+        ? `Your account was moved to the "${plan.name}" plan by an administrator${expiryNote}.`
+        : "Your plan assignment was removed by an administrator."
+    );
+
+    logAdminAction(
+      req.user.userId,
+      "user_plan_changed",
+      "user",
+      user._id.toString(),
+      `Set ${user.email}'s plan to "${plan ? plan.name : "none"}"${expiryNote}.`
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "User plan updated successfully.",
+      data: user,
     });
   } catch (error: any) {
     return res.status(500).json({
