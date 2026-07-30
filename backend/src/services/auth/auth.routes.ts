@@ -35,16 +35,17 @@ import {
   regenerateRecoveryCodeSchema,
 } from "../../validations/auth.validation.js";
 import { authMiddleware } from "../../middlewares/auth.middleware.js";
+import { loginLimiter, registerLimiter, emailActionLimiter } from "../../middlewares/rateLimit.middleware.js";
 
 const router = express.Router();
 
-router.post("/login", validate(loginSchema), login);
-router.post("/register", validate(registerSchema), register);
+router.post("/login", loginLimiter, validate(loginSchema), login);
+router.post("/register", registerLimiter, validate(registerSchema), register);
 router.post("/logout", logout);
 router.post("/refresh-token", refresh);
 router.get("/is-auth", authMiddleware, isAuth);
-router.post("/forgot-password", validate(forgotPasswordSchema), forgotPassword);
-router.post("/resend-verification", validate(resendVerificationSchema), resendverifytoken);
+router.post("/forgot-password", emailActionLimiter, validate(forgotPasswordSchema), forgotPassword);
+router.post("/resend-verification", emailActionLimiter, validate(resendVerificationSchema), resendverifytoken);
 router.post("/verify-account", validate(verifyAccountSchema), verifyAccount);
 router.post("/recover-account", validate(recoveryAccountSchema), recoveryAccount);
 router.post("/reset-password", validate(resetPasswordSchema), resetPassword);

@@ -3,33 +3,30 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { useMonaco } from "@monaco-editor/react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { projectfilesService } from "@/services/projectfiles.service";
 import { ProjectFile, Project } from "@/types/projectfile.types";
 
 // Import from your new extracted files
 import { FileCache } from "@/utils/ide-utils";
-import { 
-  IDEHeader, IDESidebar, IDEEditorArea, 
-  IDEStatusBar, IDEContextMenu, IDEModals 
+import {
+  IDEHeader, IDESidebar, IDEEditorArea,
+  IDEStatusBar, IDEContextMenu, IDEModals, IDEVersionHistory
 } from "@/components/admin/projects/ide-components";
 
 export default function WebIDE() {
   const { slug } = useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   // --- State ---
-  const [project, setProject] = useState<Project | null>(null);
-  const [files, setFiles] = useState<ProjectFile[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
   const [activeFileId, setActiveFileId] = useState<string | null>(null);
   const [fileCache, setFileCache] = useState<FileCache>({});
 
-  const [isLoading, setIsLoading] = useState(true);
   const [isFileLoading, setIsFileLoading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
 
   // Editor Stats
   const [cursorPos, setCursorPos] = useState({ ln: 1, col: 1 });
@@ -40,39 +37,44 @@ export default function WebIDE() {
   const [targetFile, setTargetFile] = useState<ProjectFile | null>(null);
   const [inputValue, setInputValue] = useState("");
 
-  // --- Initialization ---
-  const fetchProjectFiles = useCallback(async () => {
-    try {
-      const res = await projectfilesService.getProjectFiles(slug as string);
-      setProject(res.project);
-      setFiles(res.files);
-    } catch  {
-      toast.error("Failed to load workspace");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [slug]);
+  // Version history
+  const [historyOpen, setHistoryOpen] = useState(false);
 
-  useEffect(() => { 
-    fetchProjectFiles(); 
-  }, [fetchProjectFiles]);
+  // --- Data: project + file list, cached per slug ---
+  const filesQuery = useQuery({
+    queryKey: ["projectFiles", slug],
+    queryFn: () => projectfilesService.getProjectFiles(slug as string),
+    enabled: !!slug,
+  });
+
+  const project: Project | null = filesQuery.data?.project ?? null;
+  const files: ProjectFile[] = filesQuery.data?.files ?? [];
+  const isLoading = filesQuery.isLoading;
+
+  useEffect(() => {
+    if (filesQuery.isError) toast.error("Failed to load workspace");
+  }, [filesQuery.isError]);
 
   // --- Actions ---
   const loadFileContent = async (fileId: string) => {
     if (fileCache[fileId]) {
       setActiveFileId(fileId);
-      return; 
+      return;
     }
 
     setIsFileLoading(true);
-    setActiveFileId(fileId); 
+    setActiveFileId(fileId);
     try {
-      const res = await projectfilesService.getProjectFileById(fileId);
+      // Cached by react-query - re-opening a file already viewed this session skips the network call
+      const res = await queryClient.fetchQuery({
+        queryKey: ["fileContent", fileId],
+        queryFn: () => projectfilesService.getProjectFileById(fileId),
+      });
       setFileCache(prev => ({
         ...prev,
         [fileId]: { content: res.content || "", initialContent: res.content || "", isDirty: false }
       }));
-    } catch (err) {
+    } catch {
       toast.error("Failed to load file content");
       setActiveFileId(null);
     } finally {
@@ -92,81 +94,122 @@ export default function WebIDE() {
     });
   };
 
-  const handleSave = useCallback(async () => {
-    setActiveFileId(currentActiveId => {
-      if (!currentActiveId) return currentActiveId;
+  const saveMutation = useMutation({
+    mutationFn: ({ fileId, content }: { fileId: string; content: string }) =>
+      projectfilesService.updateProjectFile(fileId, content),
+    onSuccess: (_res, vars) => {
+      setFileCache(prev => ({
+        ...prev,
+        [vars.fileId]: { ...prev[vars.fileId], initialContent: vars.content, isDirty: false }
+      }));
+      queryClient.invalidateQueries({ queryKey: ["fileVersions", vars.fileId] });
+      toast.success("Saved successfully");
+    },
+    onError: () => toast.error("Failed to save file"),
+  });
 
-      setFileCache(prevCache => {
-        const currentData = prevCache[currentActiveId];
-        if (!currentData || !currentData.isDirty) return prevCache;
+  const handleSave = useCallback(() => {
+    if (!activeFileId) return;
+    const currentData = fileCache[activeFileId];
+    if (!currentData || !currentData.isDirty) return;
+    saveMutation.mutate({ fileId: activeFileId, content: currentData.content });
+  }, [activeFileId, fileCache, saveMutation]);
 
-        setIsSaving(true);
-        projectfilesService
-          .updateProjectFile(currentActiveId, currentData.content)
-          .then(() => {
-            setFileCache(prev => ({
-              ...prev,
-              [currentActiveId]: { ...prev[currentActiveId], initialContent: currentData.content, isDirty: false }
-            }));
-            toast.success("Saved successfully");
-          })
-          .catch(() => toast.error("Failed to save file"))
-          .finally(() => setIsSaving(false));
-
-        return prevCache;
-      });
-
-      return currentActiveId;
-    });
-  }, []);
-
-  const handleCreateFile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputValue.trim()) return;
-
-    try {
-      const res = await projectfilesService.createProjectFile(slug as string, inputValue, "");
+  const createFileMutation = useMutation({
+    mutationFn: () => projectfilesService.createProjectFile(slug as string, inputValue, ""),
+    onSuccess: (res) => {
       const newFile: ProjectFile = { _id: res._id, name: res.name || inputValue };
-      setFiles(prev => [...prev, newFile]);
+      queryClient.setQueryData(["projectFiles", slug], (old: any) =>
+        old ? { ...old, files: [...old.files, newFile] } : old
+      );
       setFileCache(prev => ({ ...prev, [newFile._id]: { content: "", initialContent: "", isDirty: false } }));
       setModals(prev => ({ ...prev, create: false }));
       setInputValue("");
       setActiveFileId(newFile._id);
       toast.success("File created");
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to create file");
-    }
-  };
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message || "Failed to create file"),
+  });
 
-  const handleDeleteFile = async () => {
-    if (!targetFile) return;
-    try {
-      await projectfilesService.deleteProjectFile(targetFile._id);
-      setFiles(prev => prev.filter(f => f._id !== targetFile._id));
+  const deleteFileMutation = useMutation({
+    mutationFn: (fileId: string) => projectfilesService.deleteProjectFile(fileId),
+    onSuccess: (_res, fileId) => {
+      queryClient.setQueryData(["projectFiles", slug], (old: any) =>
+        old ? { ...old, files: old.files.filter((f: ProjectFile) => f._id !== fileId) } : old
+      );
       setFileCache(prev => {
         const next = { ...prev };
-        delete next[targetFile._id];
+        delete next[fileId];
         return next;
       });
-      if (activeFileId === targetFile._id) setActiveFileId(null);
+      if (activeFileId === fileId) setActiveFileId(null);
       setModals(prev => ({ ...prev, delete: false }));
       toast.success("File deleted");
-    } catch (err) {
-      toast.error("Failed to delete file");
-    }
-  };
+    },
+    onError: () => toast.error("Failed to delete file"),
+  });
 
-  const handleRenameFile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!targetFile || !inputValue.trim()) return;
-    try {
-      await projectfilesService.renameProjectFile(targetFile._id, inputValue);
-      setFiles(prev => prev.map(f => f._id === targetFile._id ? { ...f, name: inputValue } : f));
+  const renameFileMutation = useMutation({
+    mutationFn: ({ fileId, name }: { fileId: string; name: string }) =>
+      projectfilesService.renameProjectFile(fileId, name),
+    onSuccess: (_res, vars) => {
+      queryClient.setQueryData(["projectFiles", slug], (old: any) =>
+        old ? { ...old, files: old.files.map((f: ProjectFile) => (f._id === vars.fileId ? { ...f, name: vars.name } : f)) } : old
+      );
       setModals(prev => ({ ...prev, rename: false }));
       toast.success("File renamed");
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to rename file");
-    }
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message || "Failed to rename file"),
+  });
+
+  const handleCreateFile = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputValue.trim() || createFileMutation.isPending) return;
+    createFileMutation.mutate();
+  };
+
+  const handleDeleteFile = () => {
+    if (!targetFile || deleteFileMutation.isPending) return;
+    deleteFileMutation.mutate(targetFile._id);
+  };
+
+  const handleRenameFile = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!targetFile || !inputValue.trim() || renameFileMutation.isPending) return;
+    renameFileMutation.mutate({ fileId: targetFile._id, name: inputValue });
+  };
+
+  // Cached per file - reopening history for the same file within the staleTime window skips the network call
+  const versionsQuery = useQuery({
+    queryKey: ["fileVersions", activeFileId],
+    queryFn: () => projectfilesService.getFileVersions(activeFileId as string),
+    enabled: historyOpen && !!activeFileId,
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: (versionIndex: number) =>
+      projectfilesService.restoreFileVersion(activeFileId as string, versionIndex),
+    onSuccess: (res) => {
+      if (!activeFileId) return;
+      setFileCache(prev => ({
+        ...prev,
+        [activeFileId]: { content: res.content || "", initialContent: res.content || "", isDirty: false }
+      }));
+      queryClient.invalidateQueries({ queryKey: ["fileVersions", activeFileId] });
+      queryClient.invalidateQueries({ queryKey: ["fileContent", activeFileId] });
+      toast.success("Version restored");
+    },
+    onError: () => toast.error("Failed to restore version"),
+  });
+
+  const handleOpenHistory = () => {
+    if (!activeFileId) return;
+    setHistoryOpen(true);
+  };
+
+  const handleRestoreVersion = (versionIndex: number) => {
+    if (!confirm("Restore this version? Your current content will be kept as a version too.")) return;
+    restoreMutation.mutate(versionIndex);
   };
 
   // --- Keyboard Shortcuts & Event Listeners ---
@@ -186,6 +229,10 @@ export default function WebIDE() {
     window.addEventListener('click', closeMenu);
     return () => window.removeEventListener('click', closeMenu);
   }, []);
+
+  useEffect(() => {
+    if (versionsQuery.isError) toast.error("Failed to load version history");
+  }, [versionsQuery.isError]);
 
   // --- Derived State ---
   const activeFile = files.find(f => f._id === activeFileId);
@@ -207,18 +254,19 @@ export default function WebIDE() {
 
   return (
     <div className="h-screen w-full flex flex-col bg-[#08080a] text-zinc-300 font-sans overflow-hidden selection:bg-blue-500/30">
-      <IDEHeader 
+      <IDEHeader
         router={router}
         project={project}
         activeFile={activeFile}
         activeCacheData={activeCacheData}
-        isSaving={isSaving}
+        isSaving={saveMutation.isPending}
         onNewFile={() => { setInputValue(""); setModals(prev => ({ ...prev, create: true })); }}
         onSave={handleSave}
+        onOpenHistory={handleOpenHistory}
       />
 
       <div className="flex-1 flex overflow-hidden">
-        <IDESidebar 
+        <IDESidebar
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           filteredFiles={filteredFiles}
@@ -228,8 +276,8 @@ export default function WebIDE() {
           setTargetFile={setTargetFile}
           setContextMenu={setContextMenu}
         />
-        
-        <IDEEditorArea 
+
+        <IDEEditorArea
           activeFileId={activeFileId}
           isFileLoading={isFileLoading}
           activeFile={activeFile}
@@ -240,19 +288,19 @@ export default function WebIDE() {
         />
       </div>
 
-      <IDEStatusBar 
+      <IDEStatusBar
         activeFile={activeFile}
         activeCacheData={activeCacheData}
         cursorPos={cursorPos}
       />
 
-      <IDEContextMenu 
+      <IDEContextMenu
         contextMenu={contextMenu}
         onRename={() => { setInputValue(contextMenu?.file.name || ""); setModals(prev => ({ ...prev, rename: true })); }}
         onDelete={() => setModals(prev => ({ ...prev, delete: true }))}
       />
 
-      <IDEModals 
+      <IDEModals
         modals={modals}
         setModals={setModals}
         inputValue={inputValue}
@@ -261,6 +309,16 @@ export default function WebIDE() {
         handleRenameFile={handleRenameFile}
         handleDeleteFile={handleDeleteFile}
         targetFile={targetFile}
+      />
+
+      <IDEVersionHistory
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        fileName={activeFile?.name}
+        loading={versionsQuery.isLoading}
+        versions={versionsQuery.data ?? null}
+        restoringIndex={restoreMutation.isPending ? (restoreMutation.variables ?? null) : null}
+        onRestore={handleRestoreVersion}
       />
     </div>
   );

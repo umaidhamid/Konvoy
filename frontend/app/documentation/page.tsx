@@ -6,6 +6,7 @@ import {
   Server, Globe, Database, KeyRound, Mail, Clock, Circle, FileJson, FileType,
   Braces, Settings2, HelpCircle, BookOpen, ListChecks, PlugZap,
 } from "lucide-react";
+import { BrandMark } from "@/components/auth/brand-mark";
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar structure                                                 */
@@ -97,15 +98,16 @@ const API_GROUPS = [
 ];
 
 const CLI_COMMANDS = [
-  { cmd: "konvoy login", desc: "Authenticate and store credentials locally" },
-  { cmd: "konvoy projects", desc: "List your projects" },
-//   { cmd: "konvoy projects", desc: "List your projects" },
-  { cmd: "konvoy logout", desc: "Clear the locally stored session" },
-//   { cmd: "konvoy project create <name>", desc: "Create a new project" },
-//   { cmd: "konvoy project list", desc: "List your projects" },
-//   { cmd: "konvoy file create <path>", desc: "Track a new file in the current project" },
-//   { cmd: "konvoy pull", desc: "Fetch and write a project's files to disk" },
-//   { cmd: "konvoy --version", desc: "Print the installed CLI version" },
+  { cmd: "konvoy login", desc: "Authenticate and store your session locally" },
+  { cmd: "konvoy status", desc: "Check you're online, logged in, and your token still works" },
+  { cmd: "konvoy init", desc: "Create a new project" },
+  { cmd: "konvoy add", desc: "Pick specific file(s) to upload to a project you choose" },
+  { cmd: "konvoy push", desc: "Upload every file in the folder to a project you choose" },
+  { cmd: "konvoy pull", desc: "Download files from a project you choose" },
+  { cmd: "konvoy share", desc: "Invite a teammate (by email) to a project you own" },
+  { cmd: "konvoy leave", desc: "Leave a project you're a member of" },
+  { cmd: "konvoy delete-file", desc: "Permanently delete file(s) from a project" },
+  { cmd: "konvoy delete-project", desc: "Permanently delete a project you own" },
 ];
 
 const SUPPORTED_FILES = [
@@ -123,7 +125,7 @@ const MVP_DONE = [
   "Register, log in, log out",
   "Create, view, update, delete projects",
   "Create, view, edit, save files",
-  "CLI: login, create project, create file, pull files",
+  "CLI: login, init, add, push, pull, share, leave, delete",
   "Dashboard: projects, files, editor",
 ];
 
@@ -343,28 +345,24 @@ export default function KonvoyDocs() {
   return (
     <div className="konvoy-docs">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
-
         .konvoy-docs {
-          --bg: #08090b;
-          --surface: #111318;
-          --surface-2: #15181e;
-          --border: #22262e;
-          --border-soft: #1a1d23;
-          --text: #edeef1;
-          --text-muted: #8b929c;
-          --text-faint: #565c66;
-          --amber: #f2b705;
-          --amber-dim: #7a6216;
-          --amber-wash: rgba(242,183,5,0.08);
+          --bg: var(--background);
+          --surface: var(--card);
+          --surface-2: var(--muted);
+          --border-soft: color-mix(in srgb, var(--border) 70%, transparent);
+          --text: var(--foreground);
+          --text-muted: var(--muted-foreground);
+          --text-faint: color-mix(in srgb, var(--muted-foreground) 75%, transparent);
+          --amber: var(--primary);
+          --amber-dim: color-mix(in srgb, var(--primary) 45%, transparent);
+          --amber-wash: color-mix(in srgb, var(--primary) 10%, transparent);
           --blue: #5b8def;
-          --blue-dim: #1b2436;
-          --green: #35c98c;
-          --green-dim: #12261d;
-          --red: #ef6a6a;
-          --red-dim: #2a1616;
-          --radius: 10px;
-          font-family: 'Inter', system-ui, sans-serif;
+          --blue-dim: color-mix(in srgb, #5b8def 18%, transparent);
+          --green: var(--success);
+          --green-dim: color-mix(in srgb, var(--success) 18%, transparent);
+          --red: var(--destructive);
+          --red-dim: color-mix(in srgb, var(--destructive) 18%, transparent);
+          font-family: var(--font-sans), system-ui, sans-serif;
           background: var(--bg);
           color: var(--text);
           line-height: 1.6;
@@ -372,25 +370,20 @@ export default function KonvoyDocs() {
           scroll-behavior: smooth;
         }
         .konvoy-docs * { box-sizing: border-box; }
-        .konvoy-docs h1, .konvoy-docs h2, .konvoy-docs h3 { font-family: 'Space Grotesk', sans-serif; letter-spacing: -0.02em; margin: 0; }
-        .konvoy-docs code, .knv-mono { font-family: 'IBM Plex Mono', monospace; }
+        .konvoy-docs h1, .konvoy-docs h2, .konvoy-docs h3 { font-family: var(--font-geist-sans), sans-serif; letter-spacing: -0.02em; margin: 0; }
+        .konvoy-docs code, .knv-mono { font-family: var(--font-geist-mono), monospace; }
         .konvoy-docs a { color: inherit; text-decoration: none; }
         .konvoy-docs p { margin: 0; }
 
         /* ---------- top nav ---------- */
         .knv-nav {
           position: sticky; top: 0; z-index: 60; display: flex; align-items: center; justify-content: space-between;
-          height: 56px; padding: 0 20px; background: rgba(8,9,11,0.85); backdrop-filter: blur(10px);
+          height: 56px; padding: 0 20px; background: color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter: blur(10px);
           border-bottom: 1px solid var(--border-soft);
         }
         .knv-brand { display: flex; align-items: center; gap: 9px; }
-        .knv-brand-mark {
-          width: 26px; height: 26px; border-radius: 7px; background: var(--amber);
-          display: flex; align-items: center; justify-content: center; color: #14110a;
-        }
-        .knv-brand-name { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 15px; }
         .knv-brand-tag {
-          font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-faint);
+          font-family: var(--font-geist-mono), monospace; font-size: 10px; color: var(--text-faint);
           border: 1px solid var(--border); padding: 1px 6px; border-radius: 4px; margin-left: 2px;
         }
         .knv-nav-right { display: flex; align-items: center; gap: 10px; }
@@ -398,7 +391,7 @@ export default function KonvoyDocs() {
           display: flex; align-items: center; gap: 6px; font-size: 13px; border: 1px solid var(--border);
           padding: 6px 12px; border-radius: 7px; color: var(--text-muted); transition: border-color .15s, color .15s;
         }
-        .knv-gh-btn:hover { color: var(--text); border-color: #333a43; }
+        .knv-gh-btn:hover { color: var(--text); border-color: var(--text-faint); }
         .knv-menu-btn { display: none; background: none; border: none; color: var(--text); padding: 6px; }
 
         /* ---------- shell: sidebar + content ---------- */
@@ -416,11 +409,11 @@ export default function KonvoyDocs() {
           border-radius: 8px; padding: 8px 10px; margin-bottom: 20px; color: var(--text-faint);
         }
         .knv-side-search input {
-          flex: 1; background: none; border: none; outline: none; color: var(--text); font-size: 13px; font-family: 'Inter', sans-serif;
+          flex: 1; background: none; border: none; outline: none; color: var(--text); font-size: 13px; font-family: var(--font-sans), sans-serif;
         }
         .knv-side-search input::placeholder { color: var(--text-faint); }
         .knv-side-search-kbd {
-          font-family: 'IBM Plex Mono', monospace; font-size: 10px; border: 1px solid var(--border);
+          font-family: var(--font-geist-mono), monospace; font-size: 10px; border: 1px solid var(--border);
           border-radius: 4px; padding: 1px 5px; color: var(--text-faint);
         }
 
@@ -429,7 +422,7 @@ export default function KonvoyDocs() {
         .knv-side-link {
           width: 100%; display: flex; align-items: center; gap: 9px; background: none; border: none; cursor: pointer;
           text-align: left; padding: 7px 10px; border-radius: 7px; font-size: 13.5px; color: var(--text-muted);
-          font-family: 'Inter', sans-serif; transition: color .15s, background .15s;
+          font-family: var(--font-sans), sans-serif; transition: color .15s, background .15s;
         }
         .knv-side-link.top { font-weight: 600; color: var(--text); }
         .knv-side-link.group { font-weight: 600; color: var(--text); margin-bottom: 1px; }
@@ -452,7 +445,7 @@ export default function KonvoyDocs() {
         .knv-doc-section { scroll-margin-top: 72px; }
 
         .knv-eyebrow {
-          font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: var(--amber); letter-spacing: 0.08em;
+          font-family: var(--font-geist-mono), monospace; font-size: 11.5px; color: var(--amber); letter-spacing: 0.08em;
           text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
         }
         .knv-eyebrow::before { content: ''; width: 14px; height: 1px; background: var(--amber-dim); }
@@ -468,20 +461,20 @@ export default function KonvoyDocs() {
         .knv-hero-badge {
           display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted);
           border: 1px solid var(--border); padding: 5px 12px; border-radius: 999px; margin-bottom: 22px;
-          font-family: 'IBM Plex Mono', monospace;
+          font-family: var(--font-geist-mono), monospace;
         }
         .knv-hero-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
 
         .knv-btn-primary {
-          display: inline-flex; align-items: center; gap: 8px; background: var(--amber); color: #17130a; font-weight: 600;
+          display: inline-flex; align-items: center; gap: 8px; background: var(--amber); color: var(--primary-foreground); font-weight: 600;
           font-size: 14px; padding: 10px 16px; border-radius: 8px; border: none; cursor: pointer; transition: background .15s;
         }
-        .knv-btn-primary:hover { background: #ffc617; }
+        .knv-btn-primary:hover { background: color-mix(in srgb, var(--amber) 85%, white); }
         .knv-btn-secondary {
           display: inline-flex; align-items: center; gap: 8px; background: var(--surface); color: var(--text); font-weight: 500;
           font-size: 14px; padding: 10px 16px; border-radius: 8px; border: 1px solid var(--border); cursor: pointer; transition: border-color .15s;
         }
-        .knv-btn-secondary:hover { border-color: #333a43; }
+        .knv-btn-secondary:hover { border-color: var(--text-faint); }
         .knv-hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 30px; }
 
         /* code line (inline command) */
@@ -489,11 +482,11 @@ export default function KonvoyDocs() {
           display: flex; align-items: center; gap: 10px; background: var(--surface-2); border: 1px solid var(--border);
           border-radius: 8px; padding: 9px 11px; max-width: 480px; margin: 14px 0;
         }
-        .knv-prompt { color: var(--amber); font-family: 'IBM Plex Mono', monospace; font-size: 13px; }
+        .knv-prompt { color: var(--amber); font-family: var(--font-geist-mono), monospace; font-size: 13px; }
         .knv-codeline code { font-size: 13px; color: var(--text); flex: 1; white-space: nowrap; overflow-x: auto; }
         .knv-copy-btn {
           display: flex; align-items: center; gap: 5px; background: none; border: none; color: var(--text-faint);
-          font-size: 11px; cursor: pointer; padding: 4px 6px; border-radius: 5px; font-family: 'Inter', sans-serif; flex-shrink: 0;
+          font-size: 11px; cursor: pointer; padding: 4px 6px; border-radius: 5px; font-family: var(--font-sans), sans-serif; flex-shrink: 0;
         }
         .knv-copy-btn:hover { color: var(--text); background: var(--surface); }
 
@@ -502,9 +495,9 @@ export default function KonvoyDocs() {
         .knv-codeblock-head { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-bottom: 1px solid var(--border-soft); background: var(--surface-2); }
         .knv-codeblock-dots { display: flex; gap: 5px; }
         .knv-codeblock-dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
-        .knv-codeblock-file { flex: 1; font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: var(--text-faint); }
+        .knv-codeblock-file { flex: 1; font-family: var(--font-geist-mono), monospace; font-size: 11.5px; color: var(--text-faint); }
         .knv-codeblock pre { margin: 0; padding: 16px; overflow-x: auto; }
-        .knv-codeblock code { font-family: 'IBM Plex Mono', monospace; font-size: 13px; line-height: 1.7; color: var(--text); white-space: pre; }
+        .knv-codeblock code { font-family: var(--font-geist-mono), monospace; font-size: 13px; line-height: 1.7; color: var(--text); white-space: pre; }
         .tok-comment { color: var(--text-faint); font-style: italic; }
         .tok-cmd { color: var(--amber); }
         .tok-flag { color: var(--blue); }
@@ -539,7 +532,7 @@ export default function KonvoyDocs() {
           background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px;
           transition: border-color .15s, transform .15s;
         }
-        .knv-card:hover { border-color: #333a43; }
+        .knv-card:hover { border-color: var(--text-faint); }
         .knv-card-icon {
           width: 30px; height: 30px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--border);
           display: flex; align-items: center; justify-content: center; margin-bottom: 12px; color: var(--amber);
@@ -551,7 +544,7 @@ export default function KonvoyDocs() {
           background: var(--surface); border: 1px solid var(--border); border-radius: 9px; padding: 14px;
           display: flex; flex-direction: column; gap: 8px;
         }
-        .knv-file-card .ext { font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--text); font-weight: 600; }
+        .knv-file-card .ext { font-family: var(--font-geist-mono), monospace; font-size: 13px; color: var(--text); font-weight: 600; }
         .knv-file-card p { font-size: 12px; color: var(--text-muted); margin: 0; }
         .knv-file-card svg { color: var(--amber); }
 
@@ -569,12 +562,12 @@ export default function KonvoyDocs() {
         .knv-row code { font-size: 12.5px; color: var(--text); }
         .knv-row .desc { font-size: 12px; color: var(--text-faint); text-align: right; }
         .knv-method {
-          font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; text-align: center;
+          font-family: var(--font-geist-mono), monospace; font-size: 10px; font-weight: 600; text-align: center;
           padding: 3px 0; border-radius: 5px; letter-spacing: 0.03em;
         }
         .knv-method-get { color: var(--blue); background: var(--blue-dim); }
         .knv-method-post { color: var(--green); background: var(--green-dim); }
-        .knv-method-patch { color: var(--amber); background: #3a2e0680; }
+        .knv-method-patch { color: var(--amber); background: var(--amber-wash); }
         .knv-method-delete { color: var(--red); background: var(--red-dim); }
 
         .knv-cli-row {
@@ -589,7 +582,7 @@ export default function KonvoyDocs() {
         .knv-faq-q {
           width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: none;
           border: none; cursor: pointer; padding: 14px 16px; text-align: left; color: var(--text); font-size: 14px; font-weight: 500;
-          font-family: 'Inter', sans-serif;
+          font-family: var(--font-sans), sans-serif;
         }
         .knv-faq-q svg { color: var(--text-faint); flex-shrink: 0; transition: transform .2s; }
         .knv-faq-q.open svg { transform: rotate(180deg); color: var(--amber); }
@@ -638,8 +631,7 @@ export default function KonvoyDocs() {
       {/* TOP NAV */}
       <nav className="knv-nav">
         <div className="knv-brand">
-          <div className="knv-brand-mark"><Terminal size={14} /></div>
-          <span className="knv-brand-name">Konvoy</span>
+          <BrandMark />
           <span className="knv-brand-tag">docs</span>
         </div>
         <div className="knv-nav-right">
@@ -811,8 +803,9 @@ export default function KonvoyDocs() {
                 the session locally so future commands don't ask again.
               </p>
               <CodeLine text="konvoy login" />
-              <p className="knv-p">Sign out of the current machine at any time:</p>
-              <CodeLine text="konvoy logout" />
+              <p className="knv-p">
+                There's no logout command yet — clearing the local session has to be done by hand for now.
+              </p>
             </div>
 
             <div id="cli-commands" className="knv-doc-sub">

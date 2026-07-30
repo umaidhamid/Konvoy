@@ -2,7 +2,7 @@
 // services/projectfiles.service.ts
 // ============================================
 import api from "@/lib/api";
-import { ProjectFile, Project } from "@/types/projectfile.types";
+import { ProjectFile, Project, FileVersions } from "@/types/projectfile.types";
 
 const baseUrl = "/projectfile";
 
@@ -42,6 +42,16 @@ export const projectfilesService = {
 
   deleteProjectFile: async (id: string) => {
     const response = await api.delete<{ message: string }>(`${baseUrl}/${id}`);
+    return response.data;
+  },
+
+  getFileVersions: async (id: string) => {
+    const response = await api.get<FileVersions>(`${baseUrl}/${id}/versions`);
+    return response.data;
+  },
+
+  restoreFileVersion: async (id: string, versionIndex: number) => {
+    const response = await api.post<ProjectFile>(`${baseUrl}/${id}/restore`, { versionIndex });
     return response.data;
   },
 };

@@ -12,6 +12,16 @@ export interface ProjectFile {
   updatedAt?: string;
 }
 
+export interface FileVersionEntry {
+  content: string;
+  updatedAt: string;
+}
+
+export interface FileVersions {
+  current: FileVersionEntry;
+  previousVersions: FileVersionEntry[];
+}
+
 export interface Project {
   _id: string;
   name: string;

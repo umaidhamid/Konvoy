@@ -1,14 +1,14 @@
 import React from "react";
 import Editor from "@monaco-editor/react";
-import { 
-  Loader2, ArrowLeft, Search, FileCode, Plus, Trash2, Edit2, 
-  ChevronRight, Sparkles, FolderOpen 
+import {
+  Loader2, ArrowLeft, Search, FileCode, Plus, Trash2, Edit2,
+  ChevronRight, Sparkles, FolderOpen, History, X, RotateCcw, Clock
 } from "lucide-react";
-import { ProjectFile, Project } from "@/types/projectfile.types";
+import { ProjectFile, Project, FileVersions } from "@/types/projectfile.types";
 import { FileContent, getLanguageFromFilename, getFileIcon, getLangColor } from "@/utils/ide-utils";
 
 // --- Header Component ---
-export const IDEHeader = ({ router, project, activeFile, activeCacheData, isSaving, onNewFile, onSave }: any) => (
+export const IDEHeader = ({ router, project, activeFile, activeCacheData, isSaving, onNewFile, onSave, onOpenHistory }: any) => (
   <header className="h-12 border-b border-white/6 flex items-center justify-between px-4 bg-[#0b0b0d]/90 backdrop-blur-xl z-10 shrink-0">
     <div className="flex items-center gap-3">
       <button
@@ -43,6 +43,15 @@ export const IDEHeader = ({ router, project, activeFile, activeCacheData, isSavi
       >
         <Plus size={13} /> New File
       </button>
+      {activeFile && (
+        <button
+          onClick={onOpenHistory}
+          title="Version history"
+          className="flex items-center gap-1.5 px-3 py-[7px] text-xs font-medium rounded-md text-zinc-400 hover:text-white hover:bg-white/6 border border-transparent hover:border-white/10 transition-all active:scale-[0.97]"
+        >
+          <History size={13} /> History
+        </button>
+      )}
       <button
         onClick={onSave}
         disabled={!activeCacheData?.isDirty || isSaving}
@@ -54,6 +63,173 @@ export const IDEHeader = ({ router, project, activeFile, activeCacheData, isSavi
     </div>
   </header>
 );
+
+// --- Version History Panel ---
+function versionTimeAgo(dateString?: string) {
+  if (!dateString) return "";
+  const seconds = Math.floor((Date.now() - new Date(dateString).getTime()) / 1000);
+  if (seconds < 60) return "just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+export const IDEVersionHistory = ({
+  open,
+  onClose,
+  fileName,
+  loading,
+  versions,
+  restoringIndex,
+  onRestore,
+}: {
+  open: boolean;
+  onClose: () => void;
+  fileName?: string;
+  loading: boolean;
+  versions: FileVersions | null;
+  restoringIndex: number | null;
+  onRestore: (index: number) => void;
+}) => {
+  if (!open) return null;
+
+  const currentContent = versions?.current.content ?? "";
+
+  const rows = [
+    versions
+      ? {
+          key: "current",
+          label: "Current version",
+          sub: `Saved ${versionTimeAgo(versions.current.updatedAt)}`,
+          content: versions.current.content,
+          restoreIndex: null as number | null,
+        }
+      : null,
+    ...(versions?.previousVersions || []).map((v, i) => ({
+      key: `prev-${i}`,
+      label: i === 0 ? "1 save back" : "2 saves back",
+      sub: `Saved ${versionTimeAgo(v.updatedAt)}`,
+      content: v.content,
+      restoreIndex: i,
+    })),
+  ].filter(Boolean) as { key: string; label: string; sub: string; content: string; restoreIndex: number | null }[];
+
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="w-full max-w-md h-full bg-[#0e0e10] border-l border-white/10 shadow-2xl shadow-black/60 flex flex-col animate-in slide-in-from-right duration-200">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/6 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
+              <Clock size={14} className="text-blue-400" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold text-white">Version History</h3>
+              <p className="text-[11px] text-zinc-500 truncate">
+                {fileName} {!loading && rows.length > 0 && `· ${rows.length} version${rows.length === 1 ? "" : "s"}`}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-md text-zinc-500 hover:text-white hover:bg-white/6 transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-4 py-4">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center gap-2 py-16">
+              <Loader2 className="animate-spin text-zinc-600" size={20} />
+              <p className="text-xs text-zinc-600">Loading history…</p>
+            </div>
+          ) : rows.length === 0 ? (
+            <div className="text-center py-16 px-4">
+              <div className="w-11 h-11 mx-auto mb-3 rounded-xl bg-white/4 border border-white/6 flex items-center justify-center">
+                <History size={18} className="text-zinc-600" />
+              </div>
+              <p className="text-sm text-zinc-400 font-medium">No history yet</p>
+              <p className="text-xs text-zinc-600 mt-1 max-w-[240px] mx-auto">
+                Save this file a couple more times and past versions will show up here.
+              </p>
+            </div>
+          ) : (
+            <div className="relative space-y-3">
+              {/* Timeline connector */}
+              <div className="absolute left-[15px] top-4 bottom-4 w-px bg-white/8" aria-hidden />
+
+              {rows.map((row) => {
+                const isCurrent = row.restoreIndex === null;
+                const identical = !isCurrent && row.content === currentContent;
+                const delta = row.content.length - currentContent.length;
+
+                return (
+                  <div key={row.key} className="relative flex gap-3">
+                    <div
+                      className={`relative z-10 mt-3.5 w-[9px] h-[9px] rounded-full shrink-0 ring-4 ring-[#0e0e10] ${
+                        isCurrent ? "bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]" : "bg-zinc-600"
+                      }`}
+                    />
+                    <div
+                      className={`flex-1 min-w-0 rounded-xl border p-3.5 transition-colors ${
+                        isCurrent
+                          ? "border-blue-500/30 bg-blue-500/5"
+                          : "border-white/8 bg-white/[0.02] hover:border-white/14"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2 gap-2">
+                        <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                          <span
+                            className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0 ${
+                              isCurrent ? "bg-blue-500/15 text-blue-300" : "bg-white/6 text-zinc-400"
+                            }`}
+                          >
+                            {row.label}
+                          </span>
+                          <span className="text-[11px] text-zinc-500 shrink-0">{row.sub}</span>
+                          {identical && (
+                            <span className="text-[10px] text-zinc-600 shrink-0">· identical to current</span>
+                          )}
+                          {!isCurrent && !identical && (
+                            <span className="text-[10px] text-zinc-600 shrink-0">
+                              · {delta > 0 ? `+${delta}` : delta} chars vs current
+                            </span>
+                          )}
+                        </div>
+                        {!isCurrent && (
+                          <button
+                            onClick={() => onRestore(row.restoreIndex as number)}
+                            disabled={restoringIndex !== null || identical}
+                            title={identical ? "Same content as current version" : "Restore this version"}
+                            className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-md bg-white/6 text-zinc-200 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
+                          >
+                            {restoringIndex === row.restoreIndex ? (
+                              <Loader2 size={11} className="animate-spin" />
+                            ) : (
+                              <RotateCcw size={11} />
+                            )}
+                            Restore
+                          </button>
+                        )}
+                      </div>
+                      <pre className="text-[11px] leading-relaxed text-zinc-400 bg-black/30 rounded-lg p-2.5 max-h-28 overflow-hidden whitespace-pre-wrap break-all font-mono">
+                        {row.content.slice(0, 400) || "(empty file)"}
+                        {row.content.length > 400 ? "…" : ""}
+                      </pre>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // --- Sidebar Component ---
 export const IDESidebar = ({ searchQuery, setSearchQuery, filteredFiles, activeFileId, fileCache, loadFileContent, setTargetFile, setContextMenu }: any) => (

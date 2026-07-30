@@ -6,7 +6,6 @@ import { initCommand } from "./commands/init.js";
 import { pushCommand } from "./commands/push.js";
 import { statusCommand } from "./commands/status.js";
 import { addCommand } from "./commands/add.js";
-import { unlinkCommand } from "./commands/unlink.js";
 import { shareCommand } from "./commands/share.js";
 import { leaveCommand } from "./commands/leave.js";
 import { deleteProjectCommand } from "./commands/delete-project.js";
@@ -26,7 +25,7 @@ program
     .action(projectsCommand);
 program
     .command("init")
-    .description("Create or link a project in the current folder")
+    .description("Create a new project")
     .action(initCommand);
 program
     .command("push")
@@ -34,23 +33,19 @@ program
     .action(pushCommand);
 program
     .command("status")
-    .description("Show which project the current folder is linked to")
+    .description("Show whether you're online and logged in")
     .action(statusCommand);
 program
     .command("add")
     .description("Pick specific file(s) to upload to a project you choose")
     .action(addCommand);
 program
-    .command("unlink")
-    .description("Unlink the current folder from its project")
-    .action(unlinkCommand);
-program
     .command("share")
-    .description("Invite a teammate (by email) to the linked project")
+    .description("Invite a teammate (by email) to a project you own")
     .action(shareCommand);
 program
     .command("leave")
-    .description("Leave the linked project (removes your access, doesn't delete the project)")
+    .description("Leave a project you're a member of (removes your access, doesn't delete the project)")
     .action(leaveCommand);
 program
     .command("delete-project")

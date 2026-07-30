@@ -33,6 +33,8 @@ import { AuthRequest } from "../../middlewares/auth.middleware.js";
 import { Resend } from "resend";
 
 const resend = new Resend(config.resendApiKey);
+console.log(resend);
+console.log(config.resendApiKey);
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
@@ -316,7 +318,7 @@ export const register = async (req: Request, res: Response) => {
 export const isAuth = async (req: AuthRequest, res: Response) => {
   try {
     const user = await User.findById(req.user?.userId).select(
-      "_id fullname email profileImage isVerified isDeactivated",
+      "_id fullname email profileImage isVerified isDeactivated role",
     );
 
     if (!user) {
@@ -342,6 +344,7 @@ export const isAuth = async (req: AuthRequest, res: Response) => {
         fullname: user.fullname,
         email: user.email,
         profileImage: user.profileImage,
+        role: user.role,
       },
     });
   } catch (error) {

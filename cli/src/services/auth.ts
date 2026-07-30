@@ -23,3 +23,20 @@ export async function login(
 
   return data.user;
 }
+
+// Pings the server with the stored access token - confirms both that the
+// server is reachable and that the token is still valid.
+export async function whoAmI() {
+  const domain = config.get("domain") as string;
+  const token = config.get("accessToken") as string;
+
+  const api = createApi(domain);
+
+  const { data } = await api.get("/auth/is-auth", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return data.user;
+}

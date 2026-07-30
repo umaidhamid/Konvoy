@@ -1,29 +1,21 @@
 import chalk from "chalk";
+import ora from "ora";
+import { input } from "@inquirer/prompts";
 
-import { readLink } from "../services/link.js";
-import { ensureProjectLink } from "../services/projectLink.js";
+import { createProject } from "../services/project.js";
 
 export async function initCommand() {
-  const cwd = process.cwd();
+  const name = await input({ message: "Project name" });
+  const description = await input({ message: "Description (optional)" });
 
-  const existingLink = readLink(cwd);
-  if (existingLink) {
-    console.log(chalk.yellow(`This folder is already linked to "${existingLink.name}".`));
-    return;
-  }
+  const spinner = ora("Creating project...").start();
 
   try {
-    const link = await ensureProjectLink(cwd);
-    console.log(chalk.green(`Linked ${cwd} -> ${link.name}`));
+    const project = await createProject(name, description || undefined);
+    spinner.succeed(`Project "${project.name}" created`);
   } catch (error: any) {
-    console.log();
-
-    if (error.response?.data?.message) {
-      console.log(chalk.red(error.response.data.message));
-    } else {
-      console.log(chalk.red(error.message));
-    }
-
+    spinner.fail("Failed to create project");
+    console.log(chalk.red(error.response?.data?.message || error.message));
     process.exitCode = 1;
   }
 }

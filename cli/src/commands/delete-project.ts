@@ -4,7 +4,6 @@ import select from "@inquirer/select";
 import confirm from "@inquirer/confirm";
 
 import { getProjects, deleteProject } from "../services/project.js";
-import { readLink, removeLink } from "../services/link.js";
 
 export async function deleteProjectCommand() {
   let activeSpinner = ora("Fetching your projects...").start();
@@ -40,12 +39,6 @@ export async function deleteProjectCommand() {
     activeSpinner = ora("Deleting project...").start();
     await deleteProject((project as any)._id);
     activeSpinner.succeed(`Deleted "${(project as any).name}"`);
-
-    const cwd = process.cwd();
-    const link = readLink(cwd);
-    if (link && link.projectId === (project as any)._id) {
-      removeLink(cwd);
-    }
   } catch (error: any) {
     const message = error.response?.data?.message || error.message;
 

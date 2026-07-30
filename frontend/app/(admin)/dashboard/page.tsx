@@ -1,13 +1,12 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
 import { Folder, Users, Bell, ArrowUpRight, Plus, Crown } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { projectsService } from '@/services/projects.service';
 import { notificationsService } from '@/services/notifications.service';
-import { Project } from '@/types/project.types';
-import { Notification } from '@/types/notification.types';
 
 function timeAgo(dateString?: string) {
   if (!dateString) return "";
@@ -26,40 +25,27 @@ export default function DashboardPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [dataLoading, setDataLoading] = useState(true);
-
   useEffect(() => {
     if (!loading && !user) {
       router.push('/auth/login');
     }
   }, [loading, user, router]);
 
-  useEffect(() => {
-    if (!user) return;
+  const projectsQuery = useQuery({
+    queryKey: ['projects'],
+    queryFn: () => projectsService.getProjects(),
+    enabled: !!user,
+  });
+  const notificationsQuery = useQuery({
+    queryKey: ['notifications'],
+    queryFn: () => notificationsService.getNotifications(),
+    enabled: !!user,
+  });
 
-    const load = async () => {
-      try {
-        const [projectsRes, notificationsRes] = await Promise.all([
-          projectsService.getProjects(),
-          notificationsService.getNotifications(),
-        ]);
-        if (projectsRes.success) setProjects(projectsRes.data);
-        if (notificationsRes.success) {
-          setNotifications(notificationsRes.data);
-          setUnreadCount(notificationsRes.unreadCount);
-        }
-      } catch (err) {
-        console.error("Failed to load dashboard data:", err);
-      } finally {
-        setDataLoading(false);
-      }
-    };
-
-    load();
-  }, [user]);
+  const projects = projectsQuery.data?.data ?? [];
+  const notifications = notificationsQuery.data?.data ?? [];
+  const unreadCount = notificationsQuery.data?.unreadCount ?? 0;
+  const dataLoading = projectsQuery.isLoading || notificationsQuery.isLoading;
 
   if (loading) {
     return <h1>Loading...</h1>;

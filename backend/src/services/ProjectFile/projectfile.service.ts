@@ -6,6 +6,8 @@ import ProjectFile from "../../models/ProjectFile.model.js";
 import { AppError } from "../../utils/AppError.js"; // swap for your own error class if different
 import { encrypt, decrypt } from "../../utils/encryption.js";
 
+const MAX_FILE_CONTENT_BYTES = 2 * 1024 * 1024; // 2MB per file
+
 const accessFilter = (userId: string) => ({
   $or: [{ userId }, { "members.userId": userId }],
 });
@@ -115,12 +117,53 @@ export const projectFileService = {
 
   async updateProjectFileContent(id: string, userId: string, content: string) {
     if (content === undefined) throw new AppError("Content is required", 400);
+    if (Buffer.byteLength(content, "utf8") > MAX_FILE_CONTENT_BYTES) {
+      throw new AppError(`File exceeds the ${MAX_FILE_CONTENT_BYTES / (1024 * 1024)}MB size limit`, 413);
+    }
 
     const file = await findAccessibleFile(id, userId, { write: true });
+
+    // Keep the last 2 versions before this save, most recent first
+    file.previousVersions = [
+      { content: file.content, updatedAt: file.updatedAt },
+      ...(file.previousVersions || []),
+    ].slice(0, 2) as any;
 
     file.content = encrypt(content);
     await file.save();
     return file;
+  },
+
+  async getFileVersions(id: string, userId: string) {
+    const file = await findAccessibleFile(id, userId);
+
+    return {
+      current: { content: decrypt(file.content), updatedAt: file.updatedAt },
+      previousVersions: (file.previousVersions || []).map((v: any) => ({
+        content: decrypt(v.content),
+        updatedAt: v.updatedAt,
+      })),
+    };
+  },
+
+  async restoreFileVersion(id: string, userId: string, versionIndex: number) {
+    const file = await findAccessibleFile(id, userId, { write: true });
+    const versions = file.previousVersions || [];
+    const target = versions[versionIndex];
+    if (!target) throw new AppError("Version not found", 404);
+
+    const remaining = versions.filter((_: any, i: number) => i !== versionIndex);
+    file.previousVersions = [
+      { content: file.content, updatedAt: file.updatedAt },
+      ...remaining,
+    ].slice(0, 2) as any;
+
+    file.content = target.content;
+    await file.save();
+
+    const fileObj = file.toObject();
+    fileObj.content = decrypt(file.content);
+    return fileObj;
   },
 
   async renameProjectFile(id: string, userId: string, name: string) {

@@ -72,6 +72,33 @@ export const updateProjectFile = async (req: Request, res: Response) => {
   }
 };
 
+// GET /projectfile/:id/versions
+export const getFileVersions = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params as { id: string };
+    const userId = req.user!.userId;
+
+    const versions = await projectFileService.getFileVersions(id, userId);
+    return res.status(200).json(versions);
+  } catch (error) {
+    return handleError(res, error);
+  }
+};
+
+// POST /projectfile/:id/restore
+export const restoreFileVersion = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params as { id: string };
+    const userId = req.user!.userId;
+    const { versionIndex } = req.body;
+
+    const file = await projectFileService.restoreFileVersion(id, userId, versionIndex);
+    return res.status(200).json(file);
+  } catch (error) {
+    return handleError(res, error);
+  }
+};
+
 // DELETE /projectfile/:id
 export const deleteProjectFile = async (req: Request, res: Response) => {
   try {

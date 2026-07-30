@@ -8,6 +8,7 @@ import {
   FolderKanban,
   LayoutDashboard,
   Settings,
+  ShieldCheck,
 } from "lucide-react";
 import { AuthContext } from "@/context/AuthContext";
 
@@ -27,6 +28,10 @@ export default function Sidebar({ className = "" }: SidebarProps) {
   const { user } = useContext(AuthContext);
   const displayName = user?.fullname || user?.email || "Account";
   const initial = displayName.charAt(0).toUpperCase();
+  const items =
+    user?.role === "admin"
+      ? [...navigationItems, { name: "Admin", href: "/dashboard/admin", icon: ShieldCheck }]
+      : navigationItems;
 
   return (
     <aside 
@@ -41,7 +46,7 @@ export default function Sidebar({ className = "" }: SidebarProps) {
 
       {/* Navigation Links */}
       <nav className="flex-1 p-4 space-y-1">
-        {navigationItems.map((item) => {
+        {items.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
 

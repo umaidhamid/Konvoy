@@ -1,28 +1,35 @@
 import chalk from "chalk";
 
-import { readLink } from "../services/link.js";
-import { getLiveAccess } from "../services/projectLink.js";
+import config from "../services/config.js";
+import { whoAmI } from "../services/auth.js";
 
 export async function statusCommand() {
-  const cwd = process.cwd();
-  const link = readLink(cwd);
+  const domain = config.get("domain") as string | undefined;
+  const accessToken = config.get("accessToken") as string | undefined;
 
-  if (!link) {
-    console.log(chalk.yellow("This folder isn't linked to a project yet. Run `konvoy init` first."));
+  if (!domain || !accessToken) {
+    console.log(chalk.yellow("Not logged in. Run `konvoy login` first."));
     return;
   }
 
-  console.log(chalk.green(`Linked project: ${link.name}`));
-  console.log(chalk.gray(`Slug: ${link.slug}`));
-  console.log(chalk.gray(`Folder: ${cwd}`));
+  console.log(chalk.gray(`Domain: ${domain}`));
 
-  const access = await getLiveAccess(link.projectId).catch(() => null);
-  if (access) {
-    console.log(chalk.gray(`Your access: ${access.role === "owner" ? "Owner" : "✓ You have access"}`));
-    if (access.fileCount !== undefined) {
-      console.log(chalk.gray(`Restricted to ${access.fileCount} file(s), not the whole project.`));
+  try {
+    const user = await whoAmI();
+    console.log(chalk.green("✓ Online"));
+    console.log(chalk.green(`✓ Logged in as ${user.email}`));
+    console.log(chalk.green("✓ Access token valid"));
+  } catch (error: any) {
+    if (!error.response) {
+      console.log(chalk.red(`✗ Offline — could not reach ${domain}`));
+      return;
     }
-  } else {
-    console.log(chalk.yellow("Could not verify current access (offline, or access may have been removed)."));
+
+    if (error.response.status === 401) {
+      console.log(chalk.red("✗ Access token expired or invalid. Run `konvoy login` again."));
+      return;
+    }
+
+    console.log(chalk.red(error.response?.data?.message || error.message));
   }
 }

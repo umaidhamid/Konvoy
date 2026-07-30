@@ -1,6 +1,6 @@
 import { input, password } from "@inquirer/prompts";
 export async function loginPrompt() {
-    const defaultDomain = " https://konvoy-backend.onrender.com/api/v1";
+    const defaultDomain = "https://konvoy-backend.onrender.com/api/v1";
     // const defaultDomain = " http://localhost:5000/api/v1";
     // const domain = await input({
     //   message: "API Domain",
