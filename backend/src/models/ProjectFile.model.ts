@@ -16,6 +16,9 @@ export interface IProjectFile extends Document {
   extension: string;
   language: string;
   content: string;
+  // Plaintext byte size of `content`, captured at write time (before encryption)
+  // so storage-quota checks never need to decrypt content just to measure it.
+  sizeBytes: number;
   // Last 2 versions before the current one, most recent first
   previousVersions: IProjectFileVersion[];
   isDeleted: boolean;
@@ -29,6 +32,7 @@ const ProjectFileSchema = new Schema<IProjectFile>(
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     name: { type: String, required: true, trim: true },
     content: { type: String, default: "" },
+    sizeBytes: { type: Number, default: 0 },
     previousVersions: {
       type: [
         {

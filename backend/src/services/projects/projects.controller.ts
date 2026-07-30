@@ -3,6 +3,7 @@ import User from "../../models/users.model.js";
 import ProjectFile from "../../models/ProjectFile.model.js";
 import { sendEmail } from "../../utils/sendEmail.js";
 import { notify } from "../notifications/notification.service.js";
+import { resolvePlanLimitsForUser } from "../plans/plan.service.js";
 
 const accessFilter = (userId: string) => ({
   $or: [{ userId }, { "members.userId": userId }],
@@ -26,17 +27,16 @@ const withRole = (project: any, userId: string) => {
   };
 };
 
-const MAX_PROJECTS_PER_USER = 20;
-
 export const createProject = async (req: any, res: any) => {
   try {
     const { name, description } = req.body;
 
+    const { maxProjectsPerUser } = await resolvePlanLimitsForUser(req.user.userId);
     const ownedCount = await Project.countDocuments({ userId: req.user.userId });
-    if (ownedCount >= MAX_PROJECTS_PER_USER) {
+    if (ownedCount >= maxProjectsPerUser) {
       return res.status(403).json({
         success: false,
-        message: `You've reached the limit of ${MAX_PROJECTS_PER_USER} projects.`,
+        message: `You've reached the limit of ${maxProjectsPerUser} projects.`,
       });
     }
 
@@ -81,9 +81,36 @@ export const getProjects = async (req: any, res: any) => {
       accessFilter(req.user.userId)
     ).sort({ createdAt: -1 });
 
+    const projectIds = projects.map((p) => p._id);
+    const fileStats = await ProjectFile.aggregate([
+      { $match: { projectId: { $in: projectIds }, isDeleted: false } },
+      { $group: { _id: "$projectId", fileCount: { $sum: 1 }, sizeBytes: { $sum: "$sizeBytes" } } },
+    ]);
+    const fileStatsByProject = new Map(fileStats.map((f: any) => [String(f._id), f]));
+
+    // Files/members limits are scoped to the project OWNER's plan (not the viewer's),
+    // same reasoning as enforcement - resolve once per unique owner, not per project.
+    const ownerIds = [...new Set(projects.map((p) => String(p.userId)))];
+    const limitsByOwner = new Map(
+      await Promise.all(
+        ownerIds.map(async (ownerId) => {
+          const { maxFilesPerProject, maxMembersPerProject } = await resolvePlanLimitsForUser(ownerId);
+          return [ownerId, { maxFilesPerProject, maxMembersPerProject }] as const;
+        })
+      )
+    );
+
     const data = projects.map((p) => {
+      const stats = fileStatsByProject.get(String(p._id));
+      const limits = limitsByOwner.get(String(p.userId));
       const { userId, ...rest } = withRole(p, req.user.userId);
-      return rest;
+      return {
+        ...rest,
+        fileCount: stats?.fileCount || 0,
+        sizeBytes: stats?.sizeBytes || 0,
+        memberCount: p.members?.length || 0,
+        limits,
+      };
     });
 
     return res.status(200).json({
@@ -215,6 +242,14 @@ export const addProjectMember = async (req: any, res: any) => {
     const alreadyMember = project.members.some((m: any) => String(m.userId) === String(user._id));
     if (alreadyMember) {
       return res.status(409).json({ success: false, message: "User is already a member." });
+    }
+
+    const { maxMembersPerProject } = await resolvePlanLimitsForUser(req.user.userId);
+    if (project.members.length >= maxMembersPerProject) {
+      return res.status(403).json({
+        success: false,
+        message: `This project has reached its limit of ${maxMembersPerProject} member(s).`,
+      });
     }
 
     let resolvedFileIds: string[] = [];

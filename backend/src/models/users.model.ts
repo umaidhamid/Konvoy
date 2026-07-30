@@ -27,6 +27,19 @@ const userSchema = new mongoose.Schema(
     default: "user",
   },
 
+  planId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Plan",
+    default: null,
+  },
+
+  // null = plan never expires (e.g. the default/free plan, or a plan assigned
+  // with no duration). Past date = expired, resolvePlanLimitsForUser falls back.
+  planExpiresAt: {
+    type: Date,
+    default: null,
+  },
+
   isVerified: {
     type: Boolean,
     default: false,
