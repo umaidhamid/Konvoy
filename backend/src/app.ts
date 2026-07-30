@@ -8,6 +8,7 @@ import projectRoutes from "./services/projects/projects.routes.js";
 import projectFileRoutes from "./services/ProjectFile/projectFile.routes.js";
 import contactRoutes from "./services/contact/contact.routes.js";
 import notificationRoutes from "./services/notifications/notification.routes.js";
+import adminRoutes from "./services/admin/admin.routes.js";
 const app = express();
 
 app.use(
@@ -34,5 +35,6 @@ app.use("/api/v1/projects", projectRoutes);
 app.use("/api/v1/projectfile", projectFileRoutes);
 app.use("/api/v1/contact", contactRoutes);
 app.use("/api/v1/notifications", notificationRoutes);
+app.use("/api/v1/admin", adminRoutes);
 
 export default app;

@@ -1,14 +1,16 @@
 // app/dashboard/projects/page.tsx
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {projectsService } from "@/services/projects.service";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { projectsService } from "@/services/projects.service";
 import { Project } from "@/types/project.types";
 
 export default function ProjectsPage() {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Track active project info for create/edit operations
@@ -17,31 +19,90 @@ export default function ProjectsPage() {
   const [formError, setFormError] = useState("");
 
   // Share/invite modal state
-  const [shareProject, setShareProject] = useState<Project | null>(null);
+  const [shareProjectId, setShareProjectId] = useState<string | null>(null);
   const [shareEmail, setShareEmail] = useState("");
   const [shareError, setShareError] = useState("");
   const [shareSuccess, setShareSuccess] = useState("");
-  const [membersLoading, setMembersLoading] = useState(false);
-  const [shareSubmitting, setShareSubmitting] = useState(false);
 
-  // Fetch initial project dataset
-  const fetchProjects = async () => {
-    try {
-      setLoading(true);
-      const response = await projectsService.getProjects();
+  const projectsQuery = useQuery({
+    queryKey: ["projects"],
+    queryFn: () => projectsService.getProjects(),
+  });
+  const projects = projectsQuery.data?.data ?? [];
+  const loading = projectsQuery.isLoading;
 
-      setProjects(response.data);
+  // Full detail (with populated members) for whichever project the share modal is open on
+  const shareProjectQuery = useQuery({
+    queryKey: ["project", shareProjectId],
+    queryFn: () => projectsService.getProject(shareProjectId as string),
+    enabled: !!shareProjectId,
+  });
+  const shareProject = shareProjectQuery.data?.data ?? projects.find((p) => p._id === shareProjectId) ?? null;
+  const membersLoading = shareProjectQuery.isLoading;
 
-    } catch (err: any) {
-      console.error("Failed to load projects:", err?.response?.data?.message || err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const invalidateProjects = () => queryClient.invalidateQueries({ queryKey: ["projects"] });
 
-  useEffect(() => {
-    fetchProjects();
-  }, []);
+  const createMutation = useMutation({
+    mutationFn: ({ name, description }: { name: string; description: string }) =>
+      projectsService.createProject(name, description),
+    onSuccess: () => {
+      invalidateProjects();
+      setIsModalOpen(false);
+      toast.success("Project created");
+    },
+    onError: (err: any) => setFormError(err?.response?.data?.message || "An unexpected error occurred."),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, name, description }: { id: string; name: string; description: string }) =>
+      projectsService.updateProject(id, name, description),
+    onSuccess: () => {
+      invalidateProjects();
+      setIsModalOpen(false);
+      toast.success("Project updated");
+    },
+    onError: (err: any) => setFormError(err?.response?.data?.message || "An unexpected error occurred."),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (projectId: string) => projectsService.deleteProject(projectId),
+    onSuccess: () => {
+      invalidateProjects();
+      toast.success("Project deleted");
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message || "Could not delete project."),
+  });
+
+  const leaveMutation = useMutation({
+    mutationFn: (projectId: string) => projectsService.leaveProject(projectId),
+    onSuccess: () => {
+      invalidateProjects();
+      toast.success("Left project");
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message || "Could not leave project."),
+  });
+
+  const addMemberMutation = useMutation({
+    mutationFn: ({ projectId, email }: { projectId: string; email: string }) =>
+      projectsService.addMember(projectId, email),
+    onSuccess: (res) => {
+      setShareSuccess(`${shareEmail} now has access. They'll get an email and see the project in their dashboard.`);
+      setShareEmail("");
+      queryClient.setQueryData(["project", shareProjectId], res);
+      invalidateProjects();
+    },
+    onError: (err: any) => setShareError(err?.response?.data?.message || "Could not add member."),
+  });
+
+  const removeMemberMutation = useMutation({
+    mutationFn: ({ projectId, memberId }: { projectId: string; memberId: string }) =>
+      projectsService.removeMember(projectId, memberId),
+    onSuccess: (res) => {
+      queryClient.setQueryData(["project", shareProjectId], res);
+      invalidateProjects();
+    },
+    onError: (err: any) => setShareError(err?.response?.data?.message || "Could not remove member."),
+  });
 
   // Open modal configuration helper
   const openModal = (project: Project | null = null) => {
@@ -57,108 +118,53 @@ export default function ProjectsPage() {
   };
 
   // Handle Form submission logic (Create / Update split)
-  const handleFormSubmit = async (e: React.FormEvent) => {
+  const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) return setFormError("Project name is required.");
+    setFormError("");
 
-    try {
-      if (editingProject) {
-        const res = await projectsService.updateProject(editingProject._id, formData.name, formData.description);
-        if (res.success) {
-          setProjects(projects.map(p => p._id === editingProject._id ? res.data : p));
-        }
-      } else {
-        const res = await projectsService.createProject(formData.name, formData.description);
-        if (res.success) setProjects([res.data, ...projects]);
-      }
-      setIsModalOpen(false);
-    } catch (err: any) {
-      setFormError(err?.response?.data?.message || "An unexpected error occurred.");
+    if (editingProject) {
+      updateMutation.mutate({ id: editingProject._id, name: formData.name, description: formData.description });
+    } else {
+      createMutation.mutate({ name: formData.name, description: formData.description });
     }
   };
 
-  // Open share/invite modal, loading the full project (with populated members)
-  const openShareModal = async (project: Project) => {
+  const openShareModal = (project: Project) => {
     setShareEmail("");
     setShareError("");
     setShareSuccess("");
-    setShareProject(project);
-    setMembersLoading(true);
-    try {
-      const res = await projectsService.getProject(project._id);
-      if (res.success) setShareProject(res.data);
-    } catch {
-      // keep the summary project data if the detail fetch fails
-    } finally {
-      setMembersLoading(false);
-    }
+    setShareProjectId(project._id);
   };
 
-  // Handle invite submission
-  const handleShareSubmit = async (e: React.FormEvent) => {
+  const handleShareSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!shareProject) return;
-    if (shareSubmitting) return;
+    if (!shareProjectId || addMemberMutation.isPending) return;
     if (!shareEmail.trim()) return setShareError("Email is required.");
-
     setShareError("");
     setShareSuccess("");
-    setShareSubmitting(true);
-
-    try {
-      const res = await projectsService.addMember(shareProject._id, shareEmail.trim());
-      if (res.success) {
-        setShareSuccess(`${shareEmail} now has access. They'll get an email and see the project in their dashboard.`);
-        setShareEmail("");
-        setShareProject(res.data);
-      }
-    } catch (err: any) {
-      setShareError(err?.response?.data?.message || "Could not add member.");
-    } finally {
-      setShareSubmitting(false);
-    }
+    addMemberMutation.mutate({ projectId: shareProjectId, email: shareEmail.trim() });
   };
 
-  // Handle removing a member from the shared project
-  const handleRemoveMember = async (memberId: string) => {
-    if (!shareProject) return;
+  const handleRemoveMember = (memberId: string) => {
+    if (!shareProjectId) return;
     if (!confirm("Remove this member from the project?")) return;
-
     setShareError("");
     setShareSuccess("");
-    try {
-      const res = await projectsService.removeMember(shareProject._id, memberId);
-      if (res.success) setShareProject(res.data);
-    } catch (err: any) {
-      setShareError(err?.response?.data?.message || "Could not remove member.");
-    }
+    removeMemberMutation.mutate({ projectId: shareProjectId, memberId });
   };
 
-  // Handle a member leaving a project they don't own
-  const handleLeaveProject = async (projectId: string) => {
+  const handleLeaveProject = (projectId: string) => {
     if (!confirm("Leave this project? You'll lose access unless invited again.")) return;
-    try {
-      const res = await projectsService.leaveProject(projectId);
-      if (res.success) {
-        setProjects(projects.filter((p) => p._id !== projectId));
-      }
-    } catch (err: any) {
-      alert(err?.response?.data?.message || "Could not leave project.");
-    }
+    leaveMutation.mutate(projectId);
   };
 
-  // Handle deletion sequence
-  const handleDelete = async (projectId: string) => {
+  const handleDelete = (projectId: string) => {
     if (!confirm("Are you sure you want to delete this project?")) return;
-    try {
-      const res = await projectsService.deleteProject(projectId);
-      if (res.success) {
-        setProjects(projects.filter(p => p._id !== projectId));
-      }
-    } catch (err: any) {
-      alert(err?.response?.data?.message || "Could not delete project.");
-    }
+    deleteMutation.mutate(projectId);
   };
+
+  const formSubmitting = createMutation.isPending || updateMutation.isPending;
 
   return (
     <div className="p-6 md:p-12">
@@ -323,9 +329,10 @@ export default function ProjectsPage() {
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 bg-primary text-primary-foreground font-medium text-sm rounded-lg shadow-md hover:opacity-90 transition"
+                      disabled={formSubmitting}
+                      className="px-4 py-2 bg-primary text-primary-foreground disabled:opacity-50 font-medium text-sm rounded-lg shadow-md hover:opacity-90 transition"
                     >
-                      {editingProject ? "Save Changes" : "Create"}
+                      {formSubmitting ? "Saving..." : editingProject ? "Save Changes" : "Create"}
                     </button>
                   </div>
                 </form>
@@ -342,7 +349,7 @@ export default function ProjectsPage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                onClick={() => setShareProject(null)}
+                onClick={() => setShareProjectId(null)}
                 className="absolute inset-0 bg-black/60 backdrop-blur-xs"
               />
 
@@ -380,7 +387,8 @@ export default function ProjectsPage() {
                               <button
                                 type="button"
                                 onClick={() => handleRemoveMember(memberUser._id)}
-                                className="text-xs text-destructive hover:opacity-80 transition"
+                                disabled={removeMemberMutation.isPending}
+                                className="text-xs text-destructive hover:opacity-80 transition disabled:opacity-40"
                               >
                                 Remove
                               </button>
@@ -420,20 +428,20 @@ export default function ProjectsPage() {
                   <div className="flex justify-end gap-3 pt-2">
                     <button
                       type="button"
-                      onClick={() => setShareProject(null)}
+                      onClick={() => setShareProjectId(null)}
                       className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition"
                     >
                       Close
                     </button>
                     <button
                       type="submit"
-                      disabled={shareSubmitting}
+                      disabled={addMemberMutation.isPending}
                       className="px-4 py-2 bg-primary text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm rounded-lg shadow-md hover:opacity-90 transition flex items-center gap-2"
                     >
-                      {shareSubmitting && (
+                      {addMemberMutation.isPending && (
                         <span className="h-3.5 w-3.5 rounded-full border-2 border-primary-foreground/40 border-t-primary-foreground animate-spin" />
                       )}
-                      {shareSubmitting ? "Inviting..." : "Invite"}
+                      {addMemberMutation.isPending ? "Inviting..." : "Invite"}
                     </button>
                   </div>
                 </form>

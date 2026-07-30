@@ -26,9 +26,19 @@ const withRole = (project: any, userId: string) => {
   };
 };
 
+const MAX_PROJECTS_PER_USER = 20;
+
 export const createProject = async (req: any, res: any) => {
   try {
     const { name, description } = req.body;
+
+    const ownedCount = await Project.countDocuments({ userId: req.user.userId });
+    if (ownedCount >= MAX_PROJECTS_PER_USER) {
+      return res.status(403).json({
+        success: false,
+        message: `You've reached the limit of ${MAX_PROJECTS_PER_USER} projects.`,
+      });
+    }
 
     const existingProject = await Project.findOne({
       userId: req.user.userId,

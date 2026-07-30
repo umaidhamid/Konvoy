@@ -9,6 +9,8 @@ import {
   getProjectFileById,
   updateProjectFile,
   deleteProjectFile,
+  getFileVersions,
+  restoreFileVersion,
 } from "./projectFile.controller.js";
 
 const router = Router();
@@ -17,6 +19,8 @@ router.use(authMiddleware);
 
 // IMPORTANT: /single/:id must come before /:slug or Express will match "single" as a slug
 router.get("/single/:id", getProjectFileById);
+router.get("/:id/versions", getFileVersions);
+router.post("/:id/restore", restoreFileVersion);
 router.put("/:id", updateProjectFile);
 router.delete("/:id", deleteProjectFile);
 
