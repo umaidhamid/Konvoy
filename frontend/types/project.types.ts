@@ -11,6 +11,10 @@ export interface Project {
   slug?: string;
   members?: ProjectMember[];
   myRole?: "owner" | "member" | null;
+  fileCount?: number;
+  sizeBytes?: number;
+  memberCount?: number;
+  limits?: { maxFilesPerProject: number; maxMembersPerProject: number };
 }
 export interface ProjectData {
   _id: string;

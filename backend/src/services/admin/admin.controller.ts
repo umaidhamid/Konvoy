@@ -3,6 +3,7 @@ import Project from "../../models/projects.model.js";
 import ProjectFile from "../../models/ProjectFile.model.js";
 import AdminLog from "../../models/adminLog.model.js";
 import Plan, { IPlanPricingOption } from "../../models/plan.model.js";
+import ContactQuery from "../../models/contactQuery.model.js";
 import { notify } from "../notifications/notification.service.js";
 
 const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -761,6 +762,67 @@ export const setUserPlan = async (req: any, res: any) => {
       success: true,
       message: "User plan updated successfully.",
       data: user,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Something went wrong.",
+    });
+  }
+};
+
+// GET /admin/contact - submissions from the public /contact form
+export const getContactQueries = async (req: any, res: any) => {
+  try {
+    const { page, limit, search } = parsePagination(req);
+
+    const filter = search
+      ? {
+          $or: [
+            { name: { $regex: escapeRegex(search), $options: "i" } },
+            { email: { $regex: escapeRegex(search), $options: "i" } },
+            { subject: { $regex: escapeRegex(search), $options: "i" } },
+          ],
+        }
+      : {};
+
+    const [queries, total, unreadCount] = await Promise.all([
+      ContactQuery.find(filter)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit),
+      ContactQuery.countDocuments(filter),
+      ContactQuery.countDocuments({ isRead: false }),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      data: queries,
+      pagination: { page, limit, total, pages: Math.max(1, Math.ceil(total / limit)) },
+      unreadCount,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Something went wrong.",
+    });
+  }
+};
+
+// PATCH /admin/contact/:queryId/read - body: { isRead: boolean }
+export const setContactQueryRead = async (req: any, res: any) => {
+  try {
+    const { queryId } = req.params;
+    const { isRead } = req.body;
+
+    const query = await ContactQuery.findByIdAndUpdate(queryId, { isRead: !!isRead }, { new: true });
+    if (!query) {
+      return res.status(404).json({ success: false, message: "Contact query not found." });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: query,
     });
   } catch (error: any) {
     return res.status(500).json({

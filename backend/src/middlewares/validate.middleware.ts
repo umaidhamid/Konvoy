@@ -14,9 +14,12 @@ export const validate =
       next();
     } catch (err) {
       if (err instanceof ZodError) {
+        const fieldErrors = err.flatten().fieldErrors;
+        const firstMessage = Object.values(fieldErrors).flat().find((m): m is string => !!m);
         return res.status(400).json({
           success: false,
-          errors: err.flatten().fieldErrors,
+          message: firstMessage || "Validation failed",
+          errors: fieldErrors,
         });
       }
 

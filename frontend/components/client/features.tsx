@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Lock, Code2, Terminal, FolderTree } from "lucide-react";
+import { Lock, Code2, Terminal, FolderTree, Users, ShieldCheck } from "lucide-react";
 
 const FEATURES = [
   {
@@ -27,6 +27,18 @@ const FEATURES = [
     title: "Projects, not one giant bucket",
     description:
       "Every file belongs to a project. Switch projects to switch context — nothing leaks between them.",
+  },
+  {
+    icon: Users,
+    title: "Built for teams",
+    description:
+      "Invite teammates into any project with per-file access control. Plans define exactly how many people, files, and projects your team gets.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Full control for owners",
+    description:
+      "A dedicated admin panel to manage users, roles, plans, and storage across the whole platform — with an audit log of every action taken.",
   },
 ];
 

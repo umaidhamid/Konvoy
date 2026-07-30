@@ -20,6 +20,8 @@ import {
   updatePlan,
   deletePlan,
   setUserPlan,
+  getContactQueries,
+  setContactQueryRead,
 } from "./admin.controller.js";
 
 const adminRouter = express.Router();
@@ -42,5 +44,7 @@ adminRouter.get("/plans", getAllPlans);
 adminRouter.post("/plans", validate(createPlanSchema), createPlan);
 adminRouter.put("/plans/:planId", validate(updatePlanSchema), updatePlan);
 adminRouter.delete("/plans/:planId", deletePlan);
+adminRouter.get("/contact", getContactQueries);
+adminRouter.patch("/contact/:queryId/read", setContactQueryRead);
 
 export default adminRouter;

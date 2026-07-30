@@ -4,7 +4,8 @@ import {
   Terminal, GitBranch as Github, Copy, Check, Lock, FolderKanban, FileCode2,
   LayoutDashboard, ShieldCheck, Menu, X, ArrowRight, Search, ChevronDown,
   Server, Globe, Database, KeyRound, Mail, Clock, Circle, FileJson, FileType,
-  Braces, Settings2, HelpCircle, BookOpen, ListChecks, PlugZap,
+  Braces, Settings2, HelpCircle, BookOpen, ListChecks, PlugZap, CreditCard,
+  History, Users, MessageSquare,
 } from "lucide-react";
 import { BrandMark } from "@/components/auth/brand-mark";
 
@@ -32,8 +33,12 @@ const SIDEBAR = [
       { id: "dashboard-projects", label: "Projects" },
       { id: "dashboard-files", label: "Files" },
       { id: "dashboard-editor", label: "Editor" },
+      { id: "dashboard-versions", label: "Version history" },
+      { id: "dashboard-team", label: "Team members" },
     ],
   },
+  { id: "secrets", label: "Secret Sharing", icon: KeyRound, top: true },
+  { id: "plans", label: "Plans & Limits", icon: CreditCard, top: true },
   {
     id: "cli",
     label: "CLI",
@@ -46,6 +51,7 @@ const SIDEBAR = [
   },
 //   { id: "api-reference", label: "API Reference", icon: KeyRound, top: true },
   { id: "supported-files", label: "Supported Files", icon: FileCode2, top: true },
+  { id: "admin", label: "Admin Panel", icon: ShieldCheck, top: true },
   { id: "faq", label: "FAQ", icon: HelpCircle, top: true },
   { id: "roadmap", label: "Roadmap", icon: ListChecks, top: true },
 ];
@@ -102,8 +108,8 @@ const CLI_COMMANDS = [
   { cmd: "konvoy status", desc: "Check you're online, logged in, and your token still works" },
   { cmd: "konvoy init", desc: "Create a new project" },
   { cmd: "konvoy add", desc: "Pick specific file(s) to upload to a project you choose" },
-  { cmd: "konvoy push", desc: "Upload every file in the folder to a project you choose" },
-  { cmd: "konvoy pull", desc: "Download files from a project you choose" },
+  { cmd: "konvoy push", desc: "Push all local files in the current folder to a project you choose" },
+  { cmd: "konvoy pull", desc: "List your projects" },
   { cmd: "konvoy share", desc: "Invite a teammate (by email) to a project you own" },
   { cmd: "konvoy leave", desc: "Leave a project you're a member of" },
   { cmd: "konvoy delete-file", desc: "Permanently delete file(s) from a project" },
@@ -122,38 +128,46 @@ const SUPPORTED_FILES = [
 ];
 
 const MVP_DONE = [
-  "Register, log in, log out",
+  "Register, log in, log out, account recovery",
   "Create, view, update, delete projects",
-  "Create, view, edit, save files",
+  "Create, view, edit, save files — encrypted at rest",
+  "Version history (last 2 saves, with restore)",
+  "Invite teammates to a project by email, with per-file access scoping",
   "CLI: login, init, add, push, pull, share, leave, delete",
   "Dashboard: projects, files, editor",
+  "Secret sharing — expiring, single-use links for passwords and config values",
+  "Plans & quotas — file size, storage, files/project, members/project, projects/user",
+  "Admin panel — users, projects, plans, contact inbox, activity log",
 ];
 
 const DEFERRED = [
-  "Version history",
-  "Team workspaces",
+  "Diff view between file versions",
+  "Two-factor authentication (2FA)",
   "GitHub integration",
   "CLI watch mode",
   "Automatic sync",
-  "Redis",
-  "Encryption at rest",
-  "API tokens",
+  "Personal access tokens for CI",
   "Search inside file contents",
+  "Self-serve payment for paid plans",
   "AI features",
 ];
 
 const FAQS = [
   {
     q: "Is my file content encrypted?",
-    a: "Not yet. Encryption at rest is on the roadmap for after the MVP. Until then, treat Konvoy the way you'd treat any private git remote — don't store production secrets you wouldn't otherwise commit.",
+    a: "Yes. File content is encrypted (AES-256-GCM) before it's stored, and only decrypted when you fetch it for editing or download. The same applies to anything sent through Secret Sharing.",
   },
   {
     q: "Can I use the CLI in CI?",
-    a: "You can today by pulling with a locally stored session, but scoped API tokens for headless environments haven't shipped yet. They're on the roadmap.",
+    a: "You can today by pulling with a locally stored session, but scoped personal access tokens for headless environments haven't shipped yet. They're on the roadmap.",
   },
   {
     q: "Does Konvoy support teams or shared projects?",
-    a: "Not in the MVP. Every project belongs to a single user for now. Team workspaces are a deferred feature.",
+    a: "Yes — a project owner can invite teammates by email, optionally scoped to specific files. How many teammates fit in one project depends on your plan's limit.",
+  },
+  {
+    q: "How does Secret Sharing decide when a link stops working?",
+    a: "Whichever comes first: the expiry you chose when creating it (10 minutes up to 7 days), or — if you left \"Single use only\" checked — the moment someone reveals it. Either way, the content is gone from the server after that.",
   },
   {
     q: "What happens if I pull on a machine with existing files?",
@@ -669,15 +683,15 @@ export default function KonvoyDocs() {
             <p className="knv-p">
               Developers reach for Konvoy when they're onboarding a new teammate, setting up a fresh
               machine, or tired of reconstructing the same five config files every time they clone a
-              repo somewhere new. It isn't a secrets manager and it isn't version control — it's the
-              thin layer that keeps the files git doesn't track in sync anyway.
+              repo somewhere new. It isn't version control, but it does double as a lightweight way to
+              hand off a one-off secret — see Secret Sharing below.
             </p>
             <div className="knv-hero-actions">
               <button className="knv-btn-primary" onClick={() => scrollTo("getting-started")}>
                 Get started <ArrowRight size={15} />
               </button>
-              <button className="knv-btn-secondary" onClick={() => scrollTo("api-reference")}>
-                View API reference
+              <button className="knv-btn-secondary" onClick={() => scrollTo("secrets")}>
+                Secret Sharing
               </button>
             </div>
           </section>
@@ -742,8 +756,9 @@ export default function KonvoyDocs() {
             <div id="dashboard-projects" className="knv-doc-sub">
               <h3 className="knv-h3">Projects</h3>
               <p className="knv-p">
-                The projects screen lists every project on your account. Create, rename, and delete
-                projects here — each one belongs to a single user and holds its own set of files.
+                The projects screen lists every project you own or belong to. Create, rename, and delete
+                projects you own here — each one holds its own set of files, isolated from your others.
+                How many projects you can create is set by your plan.
               </p>
             </div>
 
@@ -753,6 +768,7 @@ export default function KonvoyDocs() {
                 Open a project to see its tracked files. Konvoy stores each file's content alongside
                 its extension and a detected language, so the dashboard knows to render a
                 <code>.json</code> file differently from a <code>.env</code> file before you even open it.
+                Content is encrypted before it's stored.
               </p>
             </div>
 
@@ -762,6 +778,24 @@ export default function KonvoyDocs() {
                 The built-in editor mirrors a lightweight code editor: a file explorer on the left,
                 syntax-aware editing in the middle, and save, rename, and delete actions available
                 without leaving the page.
+              </p>
+            </div>
+
+            <div id="dashboard-versions" className="knv-doc-sub">
+              <h3 className="knv-h3">Version history</h3>
+              <p className="knv-p">
+                Every save keeps the previous version around — up to 2 saves back per file. Open{" "}
+                <strong>History</strong> in the editor toolbar to review an earlier version and restore it
+                if you need to undo a change.
+              </p>
+            </div>
+
+            <div id="dashboard-team" className="knv-doc-sub">
+              <h3 className="knv-h3">Team members</h3>
+              <p className="knv-p">
+                As a project owner, invite a teammate by email from the projects screen. You can grant
+                access to every file in the project, or restrict them to specific files. How many
+                teammates fit in one project is set by your plan.
               </p>
             </div>
 
@@ -784,6 +818,56 @@ export default function KonvoyDocs() {
             </div>
           </section>
 
+          {/* SECRET SHARING */}
+          <section id="secrets" className="knv-doc-section">
+            <Eyebrow>Secret Sharing</Eyebrow>
+            <h2 className="knv-h2">Share a secret without pasting it in chat</h2>
+            <p className="knv-lede">
+              From <strong>Secrets</strong> in the sidebar, paste a password, API key, or config value and get
+              back a one-time link — instead of dropping it into Slack or email, where it lingers forever.
+            </p>
+            <div className="knv-grid-3">
+              <div className="knv-card">
+                <div className="knv-card-icon"><Clock size={16} /></div>
+                <h4>Expires on its own</h4>
+                <p>Pick 10 minutes, 1 hour, 1 day, or 7 days. After that, the link stops working.</p>
+              </div>
+              <div className="knv-card">
+                <div className="knv-card-icon"><Lock size={16} /></div>
+                <h4>Single use only</h4>
+                <p>On by default — the secret is deleted from the server the moment someone reveals it.</p>
+              </div>
+              <div className="knv-card">
+                <div className="knv-card-icon"><KeyRound size={16} /></div>
+                <h4>No account needed to view</h4>
+                <p>Whoever you send the link to can open and reveal it without signing in.</p>
+              </div>
+            </div>
+            <p className="knv-p" style={{ marginTop: 16 }}>
+              Opening the link doesn't reveal the secret by itself — the recipient has to click{" "}
+              <strong>Reveal secret</strong>, so a link preview or bot fetching the URL won't burn a
+              single-use secret before the real recipient sees it. From the Secrets page you can also see
+              the status of everything you've shared (active, viewed, or expired) and revoke a link early.
+            </p>
+          </section>
+
+          {/* PLANS */}
+          <section id="plans" className="knv-doc-section">
+            <Eyebrow>Plans & Limits</Eyebrow>
+            <h2 className="knv-h2">Every account runs on a plan</h2>
+            <p className="knv-lede">
+              A plan sets five numbers: max file size, files per project, teammates per project, projects per
+              account, and total storage. Check <strong>Plans</strong> in the sidebar to see your current
+              numbers and usage, or the{" "}
+              <a href="/pricing" style={{ color: "var(--amber)" }}>public pricing page</a> to compare tiers.
+            </p>
+            <p className="knv-p">
+              If you're not assigned a plan, you're on the platform's default — an admin can move you to a
+              different one, including a plan billed over 1, 3, 6, or 12 months. If a plan assignment
+              expires, your account quietly reverts to the default plan's limits rather than blocking you.
+            </p>
+          </section>
+
           {/* CLI */}
           <section id="cli" className="knv-doc-section">
             <Eyebrow>CLI</Eyebrow>
@@ -793,7 +877,7 @@ export default function KonvoyDocs() {
             <div id="cli-installation" className="knv-doc-sub">
               <h3 className="knv-h3">Installation</h3>
               <p className="knv-p">Install globally with npm, or your package manager of choice.</p>
-              <CodeBlock lang="bash" code={"npm install -g konvoy\n# or\nyarn global add konvoy"} />
+              <CodeBlock lang="bash" code={"npm install -g konvoy-cli\n# or\nyarn global add konvoy-cli"} />
             </div>
 
             <div id="cli-login" className="knv-doc-sub">
@@ -863,6 +947,48 @@ export default function KonvoyDocs() {
                   <p>{f.label}</p>
                 </div>
               ))}
+            </div>
+          </section>
+
+          {/* ADMIN */}
+          <section id="admin" className="knv-doc-section">
+            <Eyebrow>Admin Panel</Eyebrow>
+            <h2 className="knv-h2">Platform-wide controls for admins</h2>
+            <p className="knv-lede">
+              If your account has the <code>admin</code> role, an <strong>Admin</strong> link appears in the
+              sidebar. It's separate from your own projects and plan — it covers every user on the platform.
+            </p>
+            <div className="knv-grid-3">
+              <div className="knv-card">
+                <div className="knv-card-icon"><Users size={16} /></div>
+                <h4>Users</h4>
+                <p>Change roles, deactivate accounts, assign plans, filter by plan status, export to CSV.</p>
+              </div>
+              <div className="knv-card">
+                <div className="knv-card-icon"><CreditCard size={16} /></div>
+                <h4>Plans</h4>
+                <p>Create and edit pricing plans, including plans hidden from the public pricing page.</p>
+              </div>
+              <div className="knv-card">
+                <div className="knv-card-icon"><FolderKanban size={16} /></div>
+                <h4>Projects</h4>
+                <p>View or delete any project on the platform, not just your own.</p>
+              </div>
+              <div className="knv-card">
+                <div className="knv-card-icon"><MessageSquare size={16} /></div>
+                <h4>Contact inbox</h4>
+                <p>Every message submitted through the public contact form, with read/unread tracking.</p>
+              </div>
+              <div className="knv-card">
+                <div className="knv-card-icon"><History size={16} /></div>
+                <h4>Activity log</h4>
+                <p>An audit trail of role changes, deactivations, plan assignments, and deletions.</p>
+              </div>
+              <div className="knv-card">
+                <div className="knv-card-icon"><LayoutDashboard size={16} /></div>
+                <h4>Overview</h4>
+                <p>Platform-wide totals — users, projects, files, and storage used.</p>
+              </div>
             </div>
           </section>
 

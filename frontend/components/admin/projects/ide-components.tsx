@@ -20,7 +20,7 @@ export const IDEHeader = ({ router, project, activeFile, activeCacheData, isSavi
       <div className="flex items-center text-sm min-w-0">
         <div className="flex items-center gap-1.5 text-zinc-100">
           <Sparkles size={13} className="text-blue-400" />
-          <span className="font-semibold tracking-tight">{project?.name || "DevVault"}</span>
+          <span className="font-semibold tracking-tight">{project?.name || "Konvoy"}</span>
         </div>
         {activeFile && (
           <>
@@ -299,7 +299,7 @@ export const IDEEditorArea = ({ activeFileId, isFileLoading, activeFile, activeC
             <FileCode size={26} className="text-zinc-600" />
           </div>
         </div>
-        <h2 className="text-base font-semibold text-zinc-200 mb-1.5">Welcome to DevVault</h2>
+        <h2 className="text-base font-semibold text-zinc-200 mb-1.5">Welcome to Konvoy</h2>
         <p className="text-sm text-zinc-500 mb-6 max-w-xs text-center">Select a file from the sidebar to start editing, or create a new one.</p>
         <button
           onClick={onNewFile}

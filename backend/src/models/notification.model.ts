@@ -12,7 +12,8 @@ export type NotificationType =
   | "account_deactivated"
   | "account_reactivated"
   | "role_changed"
-  | "plan_changed";
+  | "plan_changed"
+  | "secret_viewed";
 
 export interface INotification extends mongoose.Document {
   userId: mongoose.Types.ObjectId;

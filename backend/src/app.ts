@@ -10,6 +10,8 @@ import contactRoutes from "./services/contact/contact.routes.js";
 import notificationRoutes from "./services/notifications/notification.routes.js";
 import adminRoutes from "./services/admin/admin.routes.js";
 import plansRoutes from "./services/plans/plans.routes.js";
+import secretsRoutes from "./services/secrets/secret.routes.js";
+import searchRoutes from "./services/search/search.routes.js";
 const app = express();
 
 app.use(
@@ -40,5 +42,7 @@ app.use("/api/v1/contact", contactRoutes);
 app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/plans", plansRoutes);
+app.use("/api/v1/secrets", secretsRoutes);
+app.use("/api/v1/search", searchRoutes);
 
 export default app;

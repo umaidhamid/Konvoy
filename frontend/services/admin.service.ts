@@ -1,6 +1,7 @@
 import api from "@/lib/api";
 import { ApiResponse } from "@/types/project.types";
-import { AdminUser, AdminProject, AdminLog, AdminStats, Pagination } from "@/types/admin.types";
+import { AdminUser, AdminProject, AdminLog, AdminStats, AdminContactQuery, Pagination } from "@/types/admin.types";
+import { AdminPlan, PlanFormValues } from "@/types/plan.types";
 
 const baseUrl = "/admin";
 
@@ -11,9 +12,9 @@ export const adminService = {
     const response = await api.get<ApiResponse<AdminStats>>(`${baseUrl}/stats`);
     return response.data;
   },
-  getAllUsers: async (page = 1, limit = 20, search = "") => {
+  getAllUsers: async (page = 1, limit = 20, search = "", planStatus: "" | "active" | "expired" = "") => {
     const response = await api.get<Paginated<AdminUser[]>>(`${baseUrl}/users`, {
-      params: { page, limit, search: search || undefined },
+      params: { page, limit, search: search || undefined, planStatus: planStatus || undefined },
     });
     return response.data;
   },
@@ -34,6 +35,13 @@ export const adminService = {
   },
   setUserRole: async (userId: string, role: "user" | "admin" | "moderator") => {
     const response = await api.patch<ApiResponse<AdminUser>>(`${baseUrl}/users/${userId}/role`, { role });
+    return response.data;
+  },
+  setUserPlan: async (userId: string, planId: string | null, durationMonths?: number) => {
+    const response = await api.patch<ApiResponse<AdminUser>>(`${baseUrl}/users/${userId}/plan`, {
+      planId,
+      durationMonths,
+    });
     return response.data;
   },
   getAllProjects: async (page = 1, limit = 20, search = "") => {
@@ -65,5 +73,33 @@ export const adminService = {
     const base = process.env.NEXT_PUBLIC_BACKEND_URL || "";
     const q = search ? `?search=${encodeURIComponent(search)}` : "";
     return `${base}${baseUrl}/projects/export${q}`;
+  },
+  getAllPlans: async () => {
+    const response = await api.get<ApiResponse<AdminPlan[]>>(`${baseUrl}/plans`);
+    return response.data;
+  },
+  createPlan: async (plan: PlanFormValues) => {
+    const response = await api.post<ApiResponse<AdminPlan>>(`${baseUrl}/plans`, plan);
+    return response.data;
+  },
+  updatePlan: async (planId: string, plan: Partial<PlanFormValues>) => {
+    const response = await api.put<ApiResponse<AdminPlan>>(`${baseUrl}/plans/${planId}`, plan);
+    return response.data;
+  },
+  deletePlan: async (planId: string) => {
+    const response = await api.delete<ApiResponse<null>>(`${baseUrl}/plans/${planId}`);
+    return response.data;
+  },
+  getContactQueries: async (page = 1, limit = 20, search = "") => {
+    const response = await api.get<Paginated<AdminContactQuery[]> & { unreadCount: number }>(`${baseUrl}/contact`, {
+      params: { page, limit, search: search || undefined },
+    });
+    return response.data;
+  },
+  setContactQueryRead: async (queryId: string, isRead: boolean) => {
+    const response = await api.patch<ApiResponse<AdminContactQuery>>(`${baseUrl}/contact/${queryId}/read`, {
+      isRead,
+    });
+    return response.data;
   },
 };

@@ -7,6 +7,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { projectsService } from '@/services/projects.service';
 import { notificationsService } from '@/services/notifications.service';
+import { planService } from '@/services/plan.service';
+import { PlanStatusCard } from '@/components/dashboard/PlanStatusCard';
 
 function timeAgo(dateString?: string) {
   if (!dateString) return "";
@@ -39,6 +41,11 @@ export default function DashboardPage() {
   const notificationsQuery = useQuery({
     queryKey: ['notifications'],
     queryFn: () => notificationsService.getNotifications(),
+    enabled: !!user,
+  });
+  const myPlanQuery = useQuery({
+    queryKey: ['myPlan'],
+    queryFn: () => planService.getMyPlan(),
     enabled: !!user,
   });
 
@@ -95,6 +102,9 @@ export default function DashboardPage() {
           </Link>
         </div>
       </div>
+
+      {/* Plan status */}
+      {myPlanQuery.data?.data && <PlanStatusCard myPlan={myPlanQuery.data.data} />}
 
       {/* Grid Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

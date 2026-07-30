@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { projectsService } from "@/services/projects.service";
 import { Project } from "@/types/project.types";
+import { formatBytes } from "@/lib/formatBytes";
 
 export default function ProjectsPage() {
   const queryClient = useQueryClient();
@@ -218,6 +219,19 @@ export default function ProjectsPage() {
                     <p className="text-sm text-muted-foreground mt-2 line-clamp-3 leading-relaxed min-h-[60px]">
                       {project.description || "No description provided for this project."}
                     </p>
+                    <div className="flex flex-wrap gap-1.5 mt-3">
+                      <span className="text-[10px] font-medium px-2 py-1 rounded-md bg-secondary text-secondary-foreground">
+                        {formatBytes(project.sizeBytes ?? 0)} stored
+                      </span>
+                      <span className="text-[10px] font-medium px-2 py-1 rounded-md bg-secondary text-secondary-foreground">
+                        {project.fileCount ?? 0}
+                        {project.limits ? ` / ${project.limits.maxFilesPerProject}` : ""} files
+                      </span>
+                      <span className="text-[10px] font-medium px-2 py-1 rounded-md bg-secondary text-secondary-foreground">
+                        {project.memberCount ?? 0}
+                        {project.limits ? ` / ${project.limits.maxMembersPerProject}` : ""} members
+                      </span>
+                    </div>
                   </div>
 
                   <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-border">

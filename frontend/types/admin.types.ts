@@ -16,13 +16,15 @@ export interface AdminUser {
   profileImage?: string;
   lastLoginAt?: string;
   createdAt: string;
+  planId: { _id: string; name: string } | null;
+  planExpiresAt: string | null;
 }
 
 export interface AdminLog {
   _id: string;
   actorId: { _id: string; fullname?: string; email?: string } | string;
   action: string;
-  targetType: "user" | "project";
+  targetType: "user" | "project" | "plan";
   targetId: string;
   details: string;
   createdAt: string;
@@ -41,6 +43,16 @@ export interface AdminStats {
     fileCount: number;
     sizeBytes: number;
   }[];
+}
+
+export interface AdminContactQuery {
+  _id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
 }
 
 export interface AdminProject {
