@@ -3,18 +3,24 @@
 import React, { useContext } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import {
+  Bell,
   Compass,
   CreditCard,
   FolderKanban,
   KeyRound,
   LayoutDashboard,
   LayoutTemplate,
+  Lightbulb,
+  Monitor,
   Search,
   Settings,
   ShieldCheck,
+  Users,
 } from "lucide-react";
 import { AuthContext } from "@/context/AuthContext";
+import { notificationsService } from "@/services/notifications.service";
 
 interface SidebarProps {
   className?: string;
@@ -32,18 +38,28 @@ interface NavGroup {
 }
 
 const NAV_GROUPS: NavGroup[] = [
-  { items: [{ name: "Overview", href: "/dashboard", icon: LayoutDashboard }] },
+  {
+    items: [
+      { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
+      { name: "Notifications", href: "/dashboard/notifications", icon: Bell },
+      { name: "Feedback", href: "/dashboard/feedback", icon: Lightbulb },
+    ],
+  },
   {
     label: "Workspace",
     items: [
       { name: "Search", href: "/dashboard/search", icon: Search },
       { name: "Projects", href: "/dashboard/projects", icon: FolderKanban },
+      { name: "Team", href: "/dashboard/team", icon: Users },
       { name: "Templates", href: "/dashboard/templates", icon: LayoutTemplate },
     ],
   },
   {
     label: "Security",
-    items: [{ name: "Secrets", href: "/dashboard/secrets", icon: KeyRound }],
+    items: [
+      { name: "Secrets", href: "/dashboard/secrets", icon: KeyRound },
+      // { name: "Sessions", href: "/dashboard/security", icon: Monitor },
+    ],
   },
   {
     label: "Account",
@@ -66,6 +82,14 @@ export default function Sidebar({ className = "" }: SidebarProps) {
   const displayName = user?.fullname || user?.email || "Account";
   const initial = displayName.charAt(0).toUpperCase();
   const groups = user?.role === "admin" ? [...NAV_GROUPS, ADMIN_GROUP] : NAV_GROUPS;
+
+  const unreadQuery = useQuery({
+    queryKey: ["notificationsUnreadCount"],
+    queryFn: () => notificationsService.getNotifications(1, 1),
+    enabled: !!user,
+    refetchInterval: 30000,
+  });
+  const unreadCount = unreadQuery.data?.unreadCount ?? 0;
 
   return (
     <aside
@@ -90,7 +114,9 @@ export default function Sidebar({ className = "" }: SidebarProps) {
             <div className="space-y-0.5">
               {group.items.map((item) => {
                 const Icon = item.icon;
-                const isActive = pathname === item.href;
+                const isActive =
+                  item.href === "/dashboard" ? pathname === item.href : pathname === item.href || pathname.startsWith(`${item.href}/`);
+                const badge = item.href === "/dashboard/notifications" ? unreadCount : 0;
 
                 return (
                   <Link
@@ -110,7 +136,12 @@ export default function Sidebar({ className = "" }: SidebarProps) {
                         isActive ? "text-sidebar-primary-foreground" : "text-muted-foreground group-hover:text-sidebar-accent-foreground"
                       }`}
                     />
-                    <span className="truncate">{item.name}</span>
+                    <span className="truncate flex-1">{item.name}</span>
+                    {badge > 0 && (
+                      <span className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-destructive text-destructive-foreground">
+                        {badge > 9 ? "9+" : badge}
+                      </span>
+                    )}
                   </Link>
                 );
               })}

@@ -110,12 +110,63 @@ export const getProjects = async (req: any, res: any) => {
         sizeBytes: stats?.sizeBytes || 0,
         memberCount: p.members?.length || 0,
         limits,
+        
       };
     });
 
     return res.status(200).json({
       success: true,
       data,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Something went wrong.",
+    });
+  }
+};
+
+// GET /projects/team - everyone the requesting user collaborates with, across
+// every project, deduplicated by person (not by project). Two directions:
+// people they've invited into projects they own, and owners of projects
+// they've been invited into.
+export const getMyTeam = async (req: any, res: any) => {
+  try {
+    const userId = req.user.userId;
+
+    const [ownedProjects, memberProjects] = await Promise.all([
+      Project.find({ userId }).select("name slug members").populate("members.userId", "fullname email profileImage"),
+      Project.find({ "members.userId": userId, userId: { $ne: userId } })
+        .select("name slug userId")
+        .populate("userId", "fullname email profileImage"),
+    ]);
+
+    const myTeamMap = new Map<string, { user: any; projects: { _id: string; name: string; slug: string }[] }>();
+    for (const project of ownedProjects) {
+      for (const member of project.members) {
+        const memberUser = member.userId as any;
+        if (!memberUser?._id) continue; // deleted user
+        const key = String(memberUser._id);
+        if (!myTeamMap.has(key)) myTeamMap.set(key, { user: memberUser, projects: [] });
+        myTeamMap.get(key)!.projects.push({ _id: String(project._id), name: project.name, slug: project.slug });
+      }
+    }
+
+    const sharedWithMeMap = new Map<string, { user: any; projects: { _id: string; name: string; slug: string }[] }>();
+    for (const project of memberProjects) {
+      const owner = project.userId as any;
+      if (!owner?._id) continue;
+      const key = String(owner._id);
+      if (!sharedWithMeMap.has(key)) sharedWithMeMap.set(key, { user: owner, projects: [] });
+      sharedWithMeMap.get(key)!.projects.push({ _id: String(project._id), name: project.name, slug: project.slug });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        myTeam: Array.from(myTeamMap.values()),
+        sharedWithMe: Array.from(sharedWithMeMap.values()),
+      },
     });
   } catch (error: any) {
     return res.status(500).json({

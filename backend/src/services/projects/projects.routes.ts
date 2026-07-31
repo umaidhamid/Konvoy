@@ -5,6 +5,7 @@ import { createProjectSchema } from "../../validations/project.validation.js";
 import {
   createProject,
   getProjects,
+  getMyTeam,
   deleteProject,
   updateProject,
   getProject,
@@ -17,6 +18,7 @@ const projectRouter = express.Router();
 
 projectRouter.post("/create", authMiddleware, validate(createProjectSchema), createProject);
 projectRouter.get("/users-projects", authMiddleware, getProjects);
+projectRouter.get("/team", authMiddleware, getMyTeam);
 projectRouter.delete("/delete/:projectId", authMiddleware, deleteProject);
 projectRouter.get("/project/:projectId", authMiddleware, getProject);
 projectRouter.put("/update/:projectId", authMiddleware, updateProject);

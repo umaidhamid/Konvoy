@@ -1,6 +1,7 @@
 // services/projects.service.ts
 import api from "@/lib/api";
 import { Project, ApiResponse } from "@/types/project.types";
+import { MyTeamResponse } from "@/types/team.types";
 
 const baseUrl = "/projects";
 
@@ -11,6 +12,10 @@ export const projectsService = {
   },
   getProjects: async () => {
     const response = await api.get<ApiResponse<Project[]>>(`${baseUrl}/users-projects`);
+    return response.data;
+  },
+  getMyTeam: async () => {
+    const response = await api.get<ApiResponse<MyTeamResponse>>(`${baseUrl}/team`);
     return response.data;
   },
   deleteProject: async (projectId: string) => {

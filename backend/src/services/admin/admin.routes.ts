@@ -3,6 +3,7 @@ import { authMiddleware } from "../../middlewares/auth.middleware.js";
 import { adminMiddleware } from "../../middlewares/admin.middleware.js";
 import { validate } from "../../middlewares/validate.middleware.js";
 import { createPlanSchema, updatePlanSchema } from "../../validations/plan.validation.js";
+import { sendBroadcastSchema } from "../../validations/broadcast.validation.js";
 import {
   getAllUsers,
   getAllProjects,
@@ -22,6 +23,8 @@ import {
   setUserPlan,
   getContactQueries,
   setContactQueryRead,
+  getBroadcastAudienceCount,
+  sendBroadcast,
 } from "./admin.controller.js";
 
 const adminRouter = express.Router();
@@ -46,5 +49,7 @@ adminRouter.put("/plans/:planId", validate(updatePlanSchema), updatePlan);
 adminRouter.delete("/plans/:planId", deletePlan);
 adminRouter.get("/contact", getContactQueries);
 adminRouter.patch("/contact/:queryId/read", setContactQueryRead);
+adminRouter.get("/broadcast/audience-count", getBroadcastAudienceCount);
+adminRouter.post("/broadcast", validate(sendBroadcastSchema), sendBroadcast);
 
 export default adminRouter;

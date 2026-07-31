@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { Bell } from "lucide-react";
 import { notificationsService } from "@/services/notifications.service";
 import { Notification } from "@/types/notification.types";
@@ -93,7 +94,7 @@ export default function NotificationBell() {
             <p className="px-4 py-6 text-center text-xs text-muted-foreground">No notifications yet.</p>
           ) : (
             <ul>
-              {notifications.map((n) => (
+              {notifications.slice(0, 8).map((n) => (
                 <li
                   key={n._id}
                   onClick={() => !n.read && handleMarkRead(n._id)}
@@ -109,6 +110,13 @@ export default function NotificationBell() {
               ))}
             </ul>
           )}
+          <Link
+            href="/dashboard/notifications"
+            onClick={() => setIsOpen(false)}
+            className="block px-4 py-2.5 text-center text-xs font-medium text-primary hover:bg-primary/5 border-t border-border transition"
+          >
+            View all
+          </Link>
         </div>
       )}
     </div>

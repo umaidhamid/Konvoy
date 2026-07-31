@@ -2,6 +2,7 @@ import api from "@/lib/api";
 import { ApiResponse } from "@/types/project.types";
 import { AdminUser, AdminProject, AdminLog, AdminStats, AdminContactQuery, Pagination } from "@/types/admin.types";
 import { AdminPlan, PlanFormValues } from "@/types/plan.types";
+import { BroadcastAudience, SendBroadcastPayload } from "@/types/broadcast.types";
 
 const baseUrl = "/admin";
 
@@ -100,6 +101,16 @@ export const adminService = {
     const response = await api.patch<ApiResponse<AdminContactQuery>>(`${baseUrl}/contact/${queryId}/read`, {
       isRead,
     });
+    return response.data;
+  },
+  getBroadcastAudienceCount: async (audience: BroadcastAudience, planId?: string) => {
+    const response = await api.get<ApiResponse<{ count: number }>>(`${baseUrl}/broadcast/audience-count`, {
+      params: { audience, planId: planId || undefined },
+    });
+    return response.data;
+  },
+  sendBroadcast: async (payload: SendBroadcastPayload) => {
+    const response = await api.post<ApiResponse<{ recipientCount: number }>>(`${baseUrl}/broadcast`, payload);
     return response.data;
   },
 };

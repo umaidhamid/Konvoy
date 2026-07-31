@@ -12,6 +12,7 @@ import adminRoutes from "./services/admin/admin.routes.js";
 import plansRoutes from "./services/plans/plans.routes.js";
 import secretsRoutes from "./services/secrets/secret.routes.js";
 import searchRoutes from "./services/search/search.routes.js";
+import featureRequestRoutes from "./services/featureRequests/featureRequest.routes.js";
 const app = express();
 
 app.use(
@@ -44,5 +45,6 @@ app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/plans", plansRoutes);
 app.use("/api/v1/secrets", secretsRoutes);
 app.use("/api/v1/search", searchRoutes);
+app.use("/api/v1/feature-requests", featureRequestRoutes);
 
 export default app;

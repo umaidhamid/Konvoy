@@ -17,6 +17,9 @@ import {
   requestEmailChange,
   confirmEmailChange,
   regenerateRecoveryCode,
+  getSessions,
+  revokeSession,
+  revokeOtherSessions,
 } from "./auth.controller.js";
 
 import { validate } from "../../middlewares/validate.middleware.js";
@@ -55,4 +58,7 @@ router.post("/avatar", authMiddleware, uploadAvatar);
 router.post("/change-email", authMiddleware, validate(requestEmailChangeSchema), requestEmailChange);
 router.post("/confirm-email-change", validate(confirmEmailChangeSchema), confirmEmailChange);
 router.post("/regenerate-recovery-code", authMiddleware, validate(regenerateRecoveryCodeSchema), regenerateRecoveryCode);
+router.get("/sessions", authMiddleware, getSessions);
+router.delete("/sessions/:sessionId", authMiddleware, revokeSession);
+router.delete("/sessions", authMiddleware, revokeOtherSessions);
 export default router;

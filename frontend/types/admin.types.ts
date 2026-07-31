@@ -24,7 +24,7 @@ export interface AdminLog {
   _id: string;
   actorId: { _id: string; fullname?: string; email?: string } | string;
   action: string;
-  targetType: "user" | "project" | "plan";
+  targetType: "user" | "project" | "plan" | "broadcast";
   targetId: string;
   details: string;
   createdAt: string;

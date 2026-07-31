@@ -1,4 +1,5 @@
 import api from "@/lib/api";
+import { DeviceSession } from "@/types/session.types";
 const baseUrl = "/auth";
 export const authService = {
   login: async (email: string, password: string) => {
@@ -64,6 +65,18 @@ export const authService = {
   },
   regenerateRecoveryCode: async (password: string) => {
     const response = await api.post(`${baseUrl}/regenerate-recovery-code`, { password });
+    return response.data;
+  },
+  getSessions: async () => {
+    const response = await api.get<{ success: boolean; data: DeviceSession[] }>(`${baseUrl}/sessions`);
+    return response.data;
+  },
+  revokeSession: async (sessionId: string) => {
+    const response = await api.delete(`${baseUrl}/sessions/${sessionId}`);
+    return response.data;
+  },
+  revokeOtherSessions: async () => {
+    const response = await api.delete(`${baseUrl}/sessions`);
     return response.data;
   },
 };

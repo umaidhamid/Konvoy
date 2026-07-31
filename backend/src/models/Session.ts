@@ -19,6 +19,16 @@ const sessionSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
+
+    userAgent: {
+      type: String,
+      default: "",
+    },
+
+    ip: {
+      type: String,
+      default: "",
+    },
   },
   {
     timestamps: true,

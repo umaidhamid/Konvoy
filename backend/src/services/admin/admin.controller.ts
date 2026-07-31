@@ -18,7 +18,7 @@ const parsePagination = (req: any) => {
 const logAdminAction = (
   actorId: string,
   action: string,
-  targetType: "user" | "project" | "plan",
+  targetType: "user" | "project" | "plan" | "broadcast",
   targetId: string,
   details: string
 ) => {
@@ -823,6 +823,78 @@ export const setContactQueryRead = async (req: any, res: any) => {
     return res.status(200).json({
       success: true,
       data: query,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Something went wrong.",
+    });
+  }
+};
+
+const buildAudienceFilter = (audience: string, planId?: string) => {
+  const filter: any = { isDeactivated: { $ne: true } };
+  if (audience === "verified") filter.isVerified = true;
+  if (audience === "plan") filter.planId = planId;
+  return filter;
+};
+
+// GET /admin/broadcast/audience-count?audience=all|verified|plan&planId=
+export const getBroadcastAudienceCount = async (req: any, res: any) => {
+  try {
+    const audience = (req.query.audience as string) || "all";
+    const planId = req.query.planId as string | undefined;
+
+    if (!["all", "verified", "plan"].includes(audience)) {
+      return res.status(400).json({ success: false, message: "Invalid audience." });
+    }
+    if (audience === "plan" && !planId) {
+      return res.status(200).json({ success: true, data: { count: 0 } });
+    }
+
+    const count = await User.countDocuments(buildAudienceFilter(audience, planId));
+    return res.status(200).json({ success: true, data: { count } });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Something went wrong.",
+    });
+  }
+};
+
+// POST /admin/broadcast - body: { title, message, audience, planId? } - creates an in-app
+// notification for every matching (active) user
+export const sendBroadcast = async (req: any, res: any) => {
+  try {
+    const { title, message, audience, planId } = req.body;
+
+    if (audience === "plan") {
+      const plan = await Plan.findById(planId);
+      if (!plan) {
+        return res.status(404).json({ success: false, message: "Plan not found." });
+      }
+    }
+
+    const recipients = await User.find(buildAudienceFilter(audience, planId)).select("_id");
+    if (!recipients.length) {
+      return res.status(400).json({ success: false, message: "No users match this audience." });
+    }
+
+    const fullMessage = `${title} — ${message}`;
+    await Promise.all(recipients.map((u) => notify(u._id.toString(), "announcement", fullMessage)));
+
+    logAdminAction(
+      req.user.userId,
+      "broadcast_sent",
+      "broadcast",
+      req.user.userId,
+      `Sent "${title}" to ${recipients.length} user(s) (${audience}).`
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: `Announcement sent to ${recipients.length} user(s).`,
+      data: { recipientCount: recipients.length },
     });
   } catch (error: any) {
     return res.status(500).json({

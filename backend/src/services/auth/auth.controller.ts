@@ -30,6 +30,7 @@ import {
 } from "../../config/auth.config.js";
 import { config } from "../../config.js";
 import { AuthRequest } from "../../middlewares/auth.middleware.js";
+import { describeUserAgent } from "../../utils/userAgent.js";
 import { Resend } from "resend";
 
 const resend = new Resend(config.resendApiKey);
@@ -91,6 +92,8 @@ export const login = async (req: Request, res: Response) => {
       userId: user._id,
       tokenHash: hashToken(refreshToken),
       expiresAt: new Date(Date.now() + SESSION_EXPIRES_MS),
+      userAgent: req.headers["user-agent"] || "",
+      ip: req.ip || "",
     });
 
     res.cookie("accessToken", accessToken, ACCESS_TOKEN_COOKIE_OPTIONS);
@@ -197,6 +200,8 @@ export const refresh = async (req: Request, res: Response) => {
       userId: decoded.userId,
       tokenHash: hashToken(newRefreshToken),
       expiresAt: new Date(Date.now() + SESSION_EXPIRES_MS),
+      userAgent: req.headers["user-agent"] || "",
+      ip: req.ip || "",
     });
 
     const newAccessToken = generateAccessToken({
@@ -1040,5 +1045,74 @@ export const resetPassword = async (req: Request, res: Response) => {
       success: false,
       message: "Internal server error.",
     });
+  }
+};
+
+// GET /auth/sessions - every device currently signed into this account
+export const getSessions = async (req: AuthRequest, res: Response) => {
+  try {
+    const currentTokenHash = req.cookies.refreshToken ? hashToken(req.cookies.refreshToken) : null;
+
+    const sessions = await Session.find({ userId: req.user?.userId })
+      .select("userAgent ip createdAt updatedAt tokenHash")
+      .sort({ updatedAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      data: sessions.map((s: any) => ({
+        _id: s._id,
+        device: describeUserAgent(s.userAgent || ""),
+        ip: s.ip || "",
+        createdAt: s.createdAt,
+        lastActiveAt: s.updatedAt,
+        isCurrent: !!currentTokenHash && s.tokenHash === currentTokenHash,
+      })),
+    });
+  } catch (error) {
+    console.error("Get sessions error:", error);
+    return res.status(500).json({ success: false, message: "Internal server error." });
+  }
+};
+
+// DELETE /auth/sessions/:sessionId - sign out one specific device (not this one)
+export const revokeSession = async (req: AuthRequest, res: Response) => {
+  try {
+    const { sessionId } = req.params;
+    const currentTokenHash = req.cookies.refreshToken ? hashToken(req.cookies.refreshToken) : null;
+
+    const session = await Session.findOne({ _id: sessionId, userId: req.user?.userId });
+    if (!session) {
+      return res.status(404).json({ success: false, message: "Session not found." });
+    }
+    if (currentTokenHash && session.tokenHash === currentTokenHash) {
+      return res.status(400).json({ success: false, message: "Use logout to sign out of this device." });
+    }
+
+    await session.deleteOne();
+
+    return res.status(200).json({ success: true, message: "Signed out of that device." });
+  } catch (error) {
+    console.error("Revoke session error:", error);
+    return res.status(500).json({ success: false, message: "Internal server error." });
+  }
+};
+
+// DELETE /auth/sessions - sign out of every device except this one
+export const revokeOtherSessions = async (req: AuthRequest, res: Response) => {
+  try {
+    const currentTokenHash = req.cookies.refreshToken ? hashToken(req.cookies.refreshToken) : null;
+
+    const result = await Session.deleteMany({
+      userId: req.user?.userId,
+      tokenHash: { $ne: currentTokenHash },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `Signed out of ${result.deletedCount} other device(s).`,
+    });
+  } catch (error) {
+    console.error("Revoke other sessions error:", error);
+    return res.status(500).json({ success: false, message: "Internal server error." });
   }
 };
