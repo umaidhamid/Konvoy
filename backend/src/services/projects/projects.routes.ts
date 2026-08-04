@@ -12,6 +12,7 @@ import {
   addProjectMember,
   removeProjectMember,
   leaveProject,
+  togglePinProject,
 } from "./projects.controller.js";
 
 const projectRouter = express.Router();
@@ -25,4 +26,5 @@ projectRouter.put("/update/:projectId", authMiddleware, updateProject);
 projectRouter.post("/:projectId/members", authMiddleware, addProjectMember);
 projectRouter.delete("/:projectId/members/:memberId", authMiddleware, removeProjectMember);
 projectRouter.post("/:projectId/leave", authMiddleware, leaveProject);
+projectRouter.post("/:projectId/pin", authMiddleware, togglePinProject);
 export default projectRouter;

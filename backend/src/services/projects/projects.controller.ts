@@ -16,14 +16,16 @@ const memberUserId = (m: any) => (m.userId && m.userId._id ? m.userId._id : m.us
 // so the frontend/CLI can show it
 const withRole = (project: any, userId: string) => {
   const obj = project.toObject ? project.toObject() : project;
+  const isPinned = (obj.pinnedBy || []).some((id: any) => String(id) === String(userId));
   if (String(obj.userId) === String(userId)) {
-    return { ...obj, myRole: "owner", myFileIds: null };
+    return { ...obj, myRole: "owner", myFileIds: null, isPinned };
   }
   const member = obj.members?.find((m: any) => String(memberUserId(m)) === String(userId));
   return {
     ...obj,
     myRole: member?.role || null,
     myFileIds: member ? (member.fileIds?.length ? member.fileIds.map(String) : null) : null,
+    isPinned,
   };
 };
 
@@ -103,16 +105,19 @@ export const getProjects = async (req: any, res: any) => {
     const data = projects.map((p) => {
       const stats = fileStatsByProject.get(String(p._id));
       const limits = limitsByOwner.get(String(p.userId));
-      const { userId, ...rest } = withRole(p, req.user.userId);
+      const { userId, pinnedBy, ...rest } = withRole(p, req.user.userId);
       return {
         ...rest,
         fileCount: stats?.fileCount || 0,
         sizeBytes: stats?.sizeBytes || 0,
         memberCount: p.members?.length || 0,
         limits,
-        
+
       };
     });
+
+    // Pinned projects surface first, most-recently-created within each group.
+    data.sort((a: any, b: any) => Number(b.isPinned) - Number(a.isPinned));
 
     return res.status(200).json({
       success: true,
@@ -256,11 +261,41 @@ export const getProject = async (req: any, res: any) => {
       return res.status(404).json({ success: false, message: "Project not found." });
     }
 
-    const { userId, ...rest } = withRole(project, req.user.userId);
+    const { userId, pinnedBy, ...rest } = withRole(project, req.user.userId);
 
     return res.status(200).json({
       success: true,
       data: rest,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Something went wrong.",
+    });
+  }
+};
+
+// POST /projects/:projectId/pin - toggles the requesting user's pin on a project they can access
+export const togglePinProject = async (req: any, res: any) => {
+  try {
+    const { projectId } = req.params;
+    const userId = req.user.userId;
+
+    const project = await Project.findOne({ _id: projectId, ...accessFilter(userId) }).select("pinnedBy");
+    if (!project) {
+      return res.status(404).json({ success: false, message: "Project not found." });
+    }
+
+    const isPinned = project.pinnedBy.some((id: any) => String(id) === String(userId));
+    await Project.updateOne(
+      { _id: projectId },
+      isPinned ? { $pull: { pinnedBy: userId } } : { $addToSet: { pinnedBy: userId } }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: isPinned ? "Project unpinned." : "Project pinned.",
+      data: { isPinned: !isPinned },
     });
   } catch (error: any) {
     return res.status(500).json({

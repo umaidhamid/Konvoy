@@ -14,6 +14,8 @@ export interface IProject extends mongoose.Document {
   slug: string;
   description: string;
   members: IProjectMember[];
+  // Users (owner or member) who've pinned this project to the top of their list.
+  pinnedBy: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -54,6 +56,11 @@ const projectSchema = new mongoose.Schema<IProject>(
       trim: true,
       maxlength: [500, "Description cannot exceed 500 characters"],
       default: "",
+    },
+    pinnedBy: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: "User",
+      default: [],
     },
   },
   {
