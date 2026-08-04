@@ -14,10 +14,9 @@ export function PlanStatusCard({ myPlan }: { myPlan: MyPlanResponse }) {
   const { plans, currentPlanId, currentPlanExpiresAt, currentPlanLimits, usage } = myPlan;
   const planName = plans.find((p) => p._id === currentPlanId)?.name ?? "Free";
   const expired = !!currentPlanExpiresAt && new Date(currentPlanExpiresAt).getTime() < Date.now();
-  const storagePct = Math.min(
-    100,
-    Math.round((usage.storageUsedBytes / currentPlanLimits.maxStorageBytes) * 100)
-  );
+  const storagePct = currentPlanLimits.maxStorageBytes
+    ? Math.min(100, Math.round((usage.storageUsedBytes / currentPlanLimits.maxStorageBytes) * 100))
+    : 0;
 
   return (
     <div className="rounded-lg border border-border bg-card p-5 space-y-3">
