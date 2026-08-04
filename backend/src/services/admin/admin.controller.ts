@@ -131,11 +131,11 @@ export const getStats = async (_req: any, res: any) => {
       Project.countDocuments(),
       ProjectFile.aggregate([
         { $match: { isDeleted: false } },
-        { $group: { _id: null, totalFiles: { $sum: 1 }, totalSizeBytes: { $sum: { $strLenBytes: "$content" } } } },
+        { $group: { _id: null, totalFiles: { $sum: 1 }, totalSizeBytes: { $sum: "$sizeBytes" } } },
       ]),
       ProjectFile.aggregate([
         { $match: { isDeleted: false } },
-        { $group: { _id: "$projectId", fileCount: { $sum: 1 }, sizeBytes: { $sum: { $strLenBytes: "$content" } } } },
+        { $group: { _id: "$projectId", fileCount: { $sum: 1 }, sizeBytes: { $sum: "$sizeBytes" } } },
         { $sort: { sizeBytes: -1 } },
         { $limit: 10 },
       ]),
