@@ -141,13 +141,14 @@ export default function ProjectsPage() {
   // Handle Form submission logic (Create / Update split)
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim()) return setFormError("Project name is required.");
+    const trimmedName = formData.name.trim();
+    if (!trimmedName) return setFormError("Project name is required.");
     setFormError("");
 
     if (editingProject) {
-      updateMutation.mutate({ id: editingProject._id, name: formData.name, description: formData.description });
+      updateMutation.mutate({ id: editingProject._id, name: trimmedName, description: formData.description });
     } else {
-      createMutation.mutate({ name: formData.name, description: formData.description });
+      createMutation.mutate({ name: trimmedName, description: formData.description });
     }
   };
 
