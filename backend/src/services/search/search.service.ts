@@ -16,7 +16,9 @@ export const searchService = {
     const projectById = new Map(accessibleProjects.map((p) => [String(p._id), p]));
 
     const [projects, files] = await Promise.all([
-      Project.find({ ...accessFilter(userId), $or: [{ name: regex }, { description: regex }] })
+      Project.find({
+        $and: [accessFilter(userId), { $or: [{ name: regex }, { description: regex }] }],
+      })
         .select("name slug description")
         .limit(10),
       ProjectFile.find({ projectId: { $in: projectIds }, isDeleted: false, name: regex })
