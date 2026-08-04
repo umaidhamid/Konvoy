@@ -38,7 +38,7 @@ export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({
-      email: email.toLowerCase(),
+      email: String(email).trim().toLowerCase(),
     }).select("+passwordHash");
 
     if (!user) {
