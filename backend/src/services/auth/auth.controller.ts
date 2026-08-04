@@ -788,7 +788,7 @@ export const resendverifytoken = async (req: Request, res: Response) => {
         message: "User not found.",
       });
     }
-    if (user.verificationTokenExpiresAt) {
+    if (user.verificationTokenExpiresAt && user.verificationTokenExpiresAt.getTime() > Date.now()) {
       return res.status(400).json({
         success: false,
         message: `A verification email has already been sent to ${user.email}.`,
