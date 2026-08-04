@@ -83,6 +83,26 @@ export default function ProjectsPage() {
     onError: (err: any) => toast.error(err?.response?.data?.message || "Could not leave project."),
   });
 
+  const pinMutation = useMutation({
+    mutationFn: (projectId: string) => projectsService.togglePin(projectId),
+    onMutate: async (projectId: string) => {
+      await queryClient.cancelQueries({ queryKey: ["projects"] });
+      const previous = queryClient.getQueryData<{ data: Project[] }>(["projects"]);
+      if (previous) {
+        queryClient.setQueryData(["projects"], {
+          ...previous,
+          data: previous.data.map((p) => (p._id === projectId ? { ...p, isPinned: !p.isPinned } : p)),
+        });
+      }
+      return { previous };
+    },
+    onError: (err: any, _projectId, context) => {
+      if (context?.previous) queryClient.setQueryData(["projects"], context.previous);
+      toast.error(err?.response?.data?.message || "Could not update pin.");
+    },
+    onSettled: invalidateProjects,
+  });
+
   const addMemberMutation = useMutation({
     mutationFn: ({ projectId, email }: { projectId: string; email: string }) =>
       projectsService.addMember(projectId, email),
@@ -209,6 +229,17 @@ export default function ProjectsPage() {
                 >
                   <div>
                     <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => pinMutation.mutate(project._id)}
+                        disabled={pinMutation.isPending}
+                        title={project.isPinned ? "Unpin project" : "Pin project"}
+                        className={`shrink-0 text-base leading-none transition disabled:opacity-40 ${
+                          project.isPinned ? "text-warning" : "text-muted-foreground hover:text-warning"
+                        }`}
+                      >
+                        {project.isPinned ? "★" : "☆"}
+                      </button>
                       <h3 className="text-lg font-semibold tracking-wide truncate">{project.name}</h3>
                       {project.myRole && (
                         <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground border border-border">

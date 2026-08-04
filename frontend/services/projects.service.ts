@@ -42,4 +42,8 @@ export const projectsService = {
     const response = await api.post<ApiResponse<null>>(`${baseUrl}/${projectId}/leave`);
     return response.data;
   },
+  togglePin: async (projectId: string) => {
+    const response = await api.post<ApiResponse<{ isPinned: boolean }>>(`${baseUrl}/${projectId}/pin`);
+    return response.data;
+  },
 };

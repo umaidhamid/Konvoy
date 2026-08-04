@@ -11,6 +11,7 @@ export interface Project {
   slug?: string;
   members?: ProjectMember[];
   myRole?: "owner" | "member" | null;
+  isPinned?: boolean;
   fileCount?: number;
   sizeBytes?: number;
   memberCount?: number;
