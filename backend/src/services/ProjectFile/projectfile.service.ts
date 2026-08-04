@@ -200,8 +200,9 @@ export const projectFileService = {
     return fileObj;
   },
 
-  async renameProjectFile(id: string, userId: string, name: string) {
-    if (!name?.trim()) throw new AppError("File name is required", 400);
+  async renameProjectFile(id: string, userId: string, rawName: string) {
+    const name = rawName?.trim();
+    if (!name) throw new AppError("File name is required", 400);
 
     const file = await findAccessibleFile(id, userId, { write: true });
 
