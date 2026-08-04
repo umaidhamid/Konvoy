@@ -462,7 +462,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
     const { email } = req.body;
 
     const user = await User.findOne({
-      email: email.toLowerCase(),
+      email: String(email).trim().toLowerCase(),
     });
 
     if (!user) {
