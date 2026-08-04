@@ -84,6 +84,7 @@ export default function NotificationBell() {
             <span className="text-sm font-semibold text-foreground">Notifications</span>
             {unreadCount > 0 && (
               <button
+                type="button"
                 onClick={handleMarkAllRead}
                 className="text-xs text-primary hover:opacity-80 transition"
               >
