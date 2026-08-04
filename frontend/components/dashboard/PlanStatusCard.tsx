@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { MyPlanResponse } from "@/types/plan.types";
 import { formatBytes } from "@/lib/formatBytes";
 
@@ -29,9 +30,9 @@ export function PlanStatusCard({ myPlan }: { myPlan: MyPlanResponse }) {
             </span>
           )}
         </h2>
-        <a href="/dashboard/plans" className="text-xs text-primary hover:underline">
+        <Link href="/dashboard/plans" className="text-xs text-primary hover:underline">
           View plans
-        </a>
+        </Link>
       </div>
 
       <div className="text-xs text-muted-foreground">
