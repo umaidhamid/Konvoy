@@ -235,6 +235,7 @@ export default function ProjectsPage() {
                         onClick={() => pinMutation.mutate(project._id)}
                         disabled={pinMutation.isPending}
                         title={project.isPinned ? "Unpin project" : "Pin project"}
+                        aria-label={project.isPinned ? "Unpin project" : "Pin project"}
                         className={`shrink-0 text-base leading-none transition disabled:opacity-40 ${
                           project.isPinned ? "text-warning" : "text-muted-foreground hover:text-warning"
                         }`}
