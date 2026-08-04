@@ -316,7 +316,7 @@ export const addProjectMember = async (req: any, res: any) => {
       return res.status(404).json({ success: false, message: "Project not found." });
     }
 
-    const user = await User.findOne({ email: String(email).toLowerCase() }).select("_id email fullname");
+    const user = await User.findOne({ email: String(email).trim().toLowerCase() }).select("_id email fullname");
     if (!user) {
       return res.status(404).json({ success: false, message: "No user found with this email." });
     }
