@@ -6,10 +6,15 @@ export default function LogoutButton() {
   const router = useRouter();
   return (
     <button
-      onClick={() => {
-        authService.logout();
+      onClick={async () => {
+        try {
+          await authService.logout();
+          toast.success("Logged out successfully");
+        } catch {
+          toast.error("Failed to log out. Please try again.");
+          return;
+        }
         router.push("/login");
-        toast.success("Logged out successfully");
       }}
       className="px-4 py-2 text-sm text-muted hover:text-foreground transition-colors"
     >
