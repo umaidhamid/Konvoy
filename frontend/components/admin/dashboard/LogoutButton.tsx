@@ -6,6 +6,7 @@ export default function LogoutButton() {
   const router = useRouter();
   return (
     <button
+      type="button"
       onClick={async () => {
         try {
           await authService.logout();
