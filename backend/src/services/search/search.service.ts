@@ -11,9 +11,20 @@ export const searchService = {
   async search(userId: string, query: string) {
     const regex = { $regex: escapeRegex(query), $options: "i" };
 
-    const accessibleProjects = await Project.find(accessFilter(userId)).select("_id name slug");
-    const projectIds = accessibleProjects.map((p) => p._id);
+    const accessibleProjects = await Project.find(accessFilter(userId)).select("_id name slug userId members");
     const projectById = new Map(accessibleProjects.map((p) => [String(p._id), p]));
+
+    // Restricted members only see the file subset they were granted; owners and
+    // unrestricted members see every file in the project.
+    const allowedFileIds = (project: any) => {
+      if (String(project.userId) === String(userId)) return null;
+      const member = project.members?.find((m: any) => String(m.userId) === String(userId));
+      return member?.fileIds?.length ? member.fileIds.map((id: any) => String(id)) : null;
+    };
+    const fileScopeClauses = accessibleProjects.map((p) => {
+      const fileIds = allowedFileIds(p);
+      return fileIds ? { projectId: p._id, _id: { $in: fileIds } } : { projectId: p._id };
+    });
 
     const [projects, files] = await Promise.all([
       Project.find({
@@ -21,9 +32,11 @@ export const searchService = {
       })
         .select("name slug description")
         .limit(10),
-      ProjectFile.find({ projectId: { $in: projectIds }, isDeleted: false, name: regex })
-        .select("name projectId")
-        .limit(20),
+      fileScopeClauses.length
+        ? ProjectFile.find({ $and: [{ $or: fileScopeClauses }, { isDeleted: false, name: regex }] })
+            .select("name projectId")
+            .limit(20)
+        : [],
     ]);
 
     return {
