@@ -81,9 +81,9 @@ export const projectFileService = {
     userId: string,
     payload: { name: string }
   ) {
-    const { name } = payload;
+    const name = payload.name?.trim();
 
-    if (!name?.trim()) throw new AppError("File name is required", 400);
+    if (!name) throw new AppError("File name is required", 400);
 
     const { project, access } = await findAccessibleProjectBySlug(slug, userId);
     requireWriteAccess(access);
