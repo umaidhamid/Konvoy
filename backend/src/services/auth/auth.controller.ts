@@ -34,8 +34,6 @@ import { describeUserAgent } from "../../utils/userAgent.js";
 import { Resend } from "resend";
 
 const resend = new Resend(config.resendApiKey);
-console.log(resend);
-console.log(config.resendApiKey);
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
