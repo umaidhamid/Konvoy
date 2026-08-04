@@ -987,7 +987,7 @@ export const resetPassword = async (req: Request, res: Response) => {
     }
 
     const user = await User.findOne({
-      email: email,
+      email: String(email).trim().toLowerCase(),
       resetPasswordToken: token,
     }).select("+resetPasswordToken");
 
