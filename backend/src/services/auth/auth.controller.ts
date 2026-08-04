@@ -588,11 +588,6 @@ export const requestEmailChange = async (req: AuthRequest, res: Response) => {
         .status(404)
         .json({ success: false, message: "User not found." });
     }
-    console.log({
-      user,
-      password,
-      passwordHash: user.passwordHash,
-    });
     const isPasswordCorrect = await comparePassword(
       password,
       user.passwordHash!,
