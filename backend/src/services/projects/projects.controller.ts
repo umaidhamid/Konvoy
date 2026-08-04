@@ -367,6 +367,15 @@ export const removeProjectMember = async (req: any, res: any) => {
   try {
     const { projectId, memberId } = req.params;
 
+    const existingProject = await Project.findOne({ _id: projectId, userId: req.user.userId }).select("members");
+    if (!existingProject) {
+      return res.status(404).json({ success: false, message: "Project not found." });
+    }
+    const wasMember = existingProject.members.some((m: any) => String(m.userId) === String(memberId));
+    if (!wasMember) {
+      return res.status(404).json({ success: false, message: "Member not found." });
+    }
+
     const project = await Project.findOneAndUpdate(
       { _id: projectId, userId: req.user.userId },
       { $pull: { members: { userId: memberId } } },
