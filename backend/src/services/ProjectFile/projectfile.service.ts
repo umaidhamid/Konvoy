@@ -192,6 +192,7 @@ export const projectFileService = {
     ].slice(0, 2) as any;
 
     file.content = target.content;
+    file.sizeBytes = Buffer.byteLength(decrypt(target.content), "utf8");
     await file.save();
 
     const fileObj = file.toObject();
