@@ -247,8 +247,9 @@ export const logout = async (req: Request, res: Response) => {
 export const register = async (req: Request, res: Response) => {
   try {
     const { fullname, phoneNumber, email, password } = req.body;
+    const normalizedEmail = String(email).trim().toLowerCase();
 
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       return res
         .status(409)
@@ -267,7 +268,7 @@ export const register = async (req: Request, res: Response) => {
 
     const user = await User.create({
       fullname,
-      email: email.toLowerCase(),
+      email: normalizedEmail,
       passwordHash: hashedPassword,
       phoneNumber,
       verificationToken,
@@ -279,7 +280,7 @@ export const register = async (req: Request, res: Response) => {
       isVerified: false,
     });
 
-    const verificationLink = `${config.FRONTEND_URL}/verify?token=${verificationToken}&email=${email.toLowerCase()}`;
+    const verificationLink = `${config.FRONTEND_URL}/verify?token=${verificationToken}&email=${normalizedEmail}`;
 
     const mail = verificationEmailTemplate(
       user.fullname as string,
