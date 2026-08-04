@@ -120,7 +120,6 @@ export const login = async (req: Request, res: Response) => {
 };
 
 export const refresh = async (req: Request, res: Response) => {
-  console.log("REFRESH HIT");
   try {
     const refreshToken = req.cookies.refreshToken;
 
