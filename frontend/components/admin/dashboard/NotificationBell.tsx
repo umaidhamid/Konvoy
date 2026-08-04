@@ -65,7 +65,9 @@ export default function NotificationBell() {
   return (
     <div className="relative" ref={containerRef}>
       <button
+        type="button"
         onClick={toggleOpen}
+        aria-label="Notifications"
         className="relative p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-colors"
       >
         <Bell className="h-5 w-5" />
