@@ -31,7 +31,8 @@ const withRole = (project: any, userId: string) => {
 
 export const createProject = async (req: any, res: any) => {
   try {
-    const { name, description } = req.body;
+    const name = String(req.body.name || "").trim();
+    const { description } = req.body;
 
     const { maxProjectsPerUser } = await resolvePlanLimitsForUser(req.user.userId);
     const ownedCount = await Project.countDocuments({ userId: req.user.userId });
