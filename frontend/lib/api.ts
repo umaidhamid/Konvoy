@@ -53,4 +53,17 @@ api.interceptors.response.use(
   }
 );
 
+export function getApiErrorMessage(error: any, fallback: string): string {
+  if (error?.response?.data?.message) {
+    return error.response.data.message;
+  }
+  if (error?.response?.status === 413) {
+    return "Upload is too large. Please reduce the file size and try again.";
+  }
+  if (!error?.response && (error?.code === "ERR_NETWORK" || error?.request)) {
+    return "Network error — check your connection and try again.";
+  }
+  return fallback;
+}
+
 export default api;

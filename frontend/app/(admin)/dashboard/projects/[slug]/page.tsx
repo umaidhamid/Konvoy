@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { projectfilesService } from "@/services/projectfiles.service";
 import { ProjectFile, Project } from "@/types/projectfile.types";
+import { getApiErrorMessage } from "@/lib/api";
 
 // Import from your new extracted files
 import { FileCache } from "@/utils/ide-utils";
@@ -105,7 +106,7 @@ export default function WebIDE() {
       queryClient.invalidateQueries({ queryKey: ["fileVersions", vars.fileId] });
       toast.success("Saved successfully");
     },
-    onError: () => toast.error("Failed to save file"),
+    onError: (err: any) => toast.error(getApiErrorMessage(err, "Failed to save file")),
   });
 
   const handleSave = useCallback(() => {
@@ -128,7 +129,7 @@ export default function WebIDE() {
       setActiveFileId(newFile._id);
       toast.success("File created");
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message || "Failed to create file"),
+    onError: (err: any) => toast.error(getApiErrorMessage(err, "Failed to create file")),
   });
 
   const deleteFileMutation = useMutation({

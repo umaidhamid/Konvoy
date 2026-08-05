@@ -47,4 +47,19 @@ app.use("/api/v1/secrets", secretsRoutes);
 app.use("/api/v1/search", searchRoutes);
 app.use("/api/v1/feature-requests", featureRequestRoutes);
 
+app.use(
+  (err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    if (err?.type === "entity.too.large" || err?.status === 413) {
+      return res.status(413).json({
+        message: "Upload is too large. Please reduce the file size and try again.",
+      });
+    }
+
+    const status = err?.statusCode || err?.status || 500;
+    const message = err?.message || "Internal server error";
+    console.error(err);
+    return res.status(status).json({ message });
+  }
+);
+
 export default app;
