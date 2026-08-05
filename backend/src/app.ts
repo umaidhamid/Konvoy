@@ -15,6 +15,7 @@ import searchRoutes from "./services/search/search.routes.js";
 import featureRequestRoutes from "./services/featureRequests/featureRequest.routes.js";
 import referralRoutes from "./services/referrals/referral.routes.js";
 import diffShareRoutes from "./services/diffShare/diffShare.routes.js";
+import dataExportRoutes from "./services/dataExport/dataExport.routes.js";
 const app = express();
 
 app.use(
@@ -50,6 +51,7 @@ app.use("/api/v1/search", searchRoutes);
 app.use("/api/v1/feature-requests", featureRequestRoutes);
 app.use("/api/v1/referrals", referralRoutes);
 app.use("/api/v1/diff-shares", diffShareRoutes);
+app.use("/api/v1/data-export", dataExportRoutes);
 
 app.use(
   (err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
