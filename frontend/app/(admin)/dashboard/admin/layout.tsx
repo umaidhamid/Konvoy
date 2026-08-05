@@ -15,6 +15,7 @@ const TABS = [
   { name: "Activity Log", href: "/dashboard/admin/logs" },
   { name: "Plans", href: "/dashboard/admin/plans" },
   { name: "Contact", href: "/dashboard/admin/contact" },
+  { name: "Settings", href: "/dashboard/admin/settings" },
 ];
 
 function isTabActive(pathname: string, href: string) {

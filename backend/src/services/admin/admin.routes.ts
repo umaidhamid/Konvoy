@@ -25,6 +25,8 @@ import {
   setContactQueryRead,
   getBroadcastAudienceCount,
   sendBroadcast,
+  getAppSettings,
+  updateAppSettings,
 } from "./admin.controller.js";
 
 const adminRouter = express.Router();
@@ -51,5 +53,7 @@ adminRouter.get("/contact", getContactQueries);
 adminRouter.patch("/contact/:queryId/read", setContactQueryRead);
 adminRouter.get("/broadcast/audience-count", getBroadcastAudienceCount);
 adminRouter.post("/broadcast", validate(sendBroadcastSchema), sendBroadcast);
+adminRouter.get("/settings", getAppSettings);
+adminRouter.patch("/settings", updateAppSettings);
 
 export default adminRouter;

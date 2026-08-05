@@ -66,3 +66,9 @@ export interface AdminProject {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface AppSettings {
+  _id: string;
+  referralRewardBytes: number;
+  updatedAt: string;
+}

@@ -5,6 +5,7 @@ import AdminLog from "../../models/adminLog.model.js";
 import Plan, { IPlanPricingOption } from "../../models/plan.model.js";
 import ContactQuery from "../../models/contactQuery.model.js";
 import { notify } from "../notifications/notification.service.js";
+import { appSettingsService } from "../settings/appSettings.service.js";
 
 const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -18,7 +19,7 @@ const parsePagination = (req: any) => {
 const logAdminAction = (
   actorId: string,
   action: string,
-  targetType: "user" | "project" | "plan" | "broadcast",
+  targetType: "user" | "project" | "plan" | "broadcast" | "settings",
   targetId: string,
   details: string
 ) => {
@@ -894,6 +895,42 @@ export const sendBroadcast = async (req: any, res: any) => {
       message: `Announcement sent to ${recipients.length} user(s).`,
       data: { recipientCount: recipients.length },
     });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Something went wrong.",
+    });
+  }
+};
+
+// GET /admin/settings
+export const getAppSettings = async (_req: any, res: any) => {
+  try {
+    const settings = await appSettingsService.getSettings();
+    return res.status(200).json({ success: true, data: settings });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Something went wrong.",
+    });
+  }
+};
+
+// PATCH /admin/settings - body: { referralRewardBytes }
+export const updateAppSettings = async (req: any, res: any) => {
+  try {
+    const { referralRewardBytes } = req.body;
+    const settings = await appSettingsService.updateSettings({ referralRewardBytes });
+
+    logAdminAction(
+      req.user.userId,
+      "settings_updated",
+      "settings",
+      "global",
+      `Set referral reward to ${(referralRewardBytes / (1024 * 1024)).toFixed(0)}MB.`
+    );
+
+    return res.status(200).json({ success: true, data: settings });
   } catch (error: any) {
     return res.status(500).json({
       success: false,

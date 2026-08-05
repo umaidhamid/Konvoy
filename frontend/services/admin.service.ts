@@ -1,6 +1,6 @@
 import api from "@/lib/api";
 import { ApiResponse } from "@/types/project.types";
-import { AdminUser, AdminProject, AdminLog, AdminStats, AdminContactQuery, Pagination } from "@/types/admin.types";
+import { AdminUser, AdminProject, AdminLog, AdminStats, AdminContactQuery, Pagination, AppSettings } from "@/types/admin.types";
 import { AdminPlan, PlanFormValues } from "@/types/plan.types";
 import { BroadcastAudience, SendBroadcastPayload } from "@/types/broadcast.types";
 
@@ -111,6 +111,14 @@ export const adminService = {
   },
   sendBroadcast: async (payload: SendBroadcastPayload) => {
     const response = await api.post<ApiResponse<{ recipientCount: number }>>(`${baseUrl}/broadcast`, payload);
+    return response.data;
+  },
+  getSettings: async () => {
+    const response = await api.get<ApiResponse<AppSettings>>(`${baseUrl}/settings`);
+    return response.data;
+  },
+  updateSettings: async (updates: { referralRewardBytes: number }) => {
+    const response = await api.patch<ApiResponse<AppSettings>>(`${baseUrl}/settings`, updates);
     return response.data;
   },
 };
