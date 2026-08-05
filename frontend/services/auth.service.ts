@@ -11,12 +11,14 @@ export const authService = {
     phoneNumber: string,
     email: string,
     password: string,
+    referralCode?: string,
   ) => {
     const response = await api.post(`${baseUrl}/register`, {
       fullname,
       phoneNumber,
       email,
       password,
+      referralCode: referralCode || undefined,
     });
 
     return response.data;

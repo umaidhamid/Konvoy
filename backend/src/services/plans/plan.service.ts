@@ -31,9 +31,10 @@ export interface ResolvedPlanLimits {
 // EXPIRED assignment (planExpiresAt in the past) falls through to the default
 // plan/hardcoded fallback below, same as having no plan at all.
 export async function resolvePlanLimitsForUser(userId: string): Promise<ResolvedPlanLimits> {
-  const user = await User.findById(userId).select("planId planExpiresAt").populate("planId");
+  const user = await User.findById(userId).select("planId planExpiresAt bonusStorageBytes").populate("planId");
   const assignedPlan = user?.planId as any;
   const isExpired = !!(user?.planExpiresAt && user.planExpiresAt.getTime() < Date.now());
+  const bonusStorageBytes = user?.bonusStorageBytes || 0;
 
   if (assignedPlan && !isExpired) {
     return {
@@ -42,7 +43,7 @@ export async function resolvePlanLimitsForUser(userId: string): Promise<Resolved
       maxFileSizeBytes: assignedPlan.maxFileSizeBytes,
       maxFilesPerProject: assignedPlan.maxFilesPerProject,
       maxProjectsPerUser: assignedPlan.maxProjectsPerUser,
-      maxStorageBytes: assignedPlan.maxStorageBytes,
+      maxStorageBytes: assignedPlan.maxStorageBytes + bonusStorageBytes,
       maxMembersPerProject: assignedPlan.maxMembersPerProject,
       planExpiresAt: user?.planExpiresAt || null,
       source: "user",
@@ -57,7 +58,7 @@ export async function resolvePlanLimitsForUser(userId: string): Promise<Resolved
       maxFileSizeBytes: defaultPlan.maxFileSizeBytes,
       maxFilesPerProject: defaultPlan.maxFilesPerProject,
       maxProjectsPerUser: defaultPlan.maxProjectsPerUser,
-      maxStorageBytes: defaultPlan.maxStorageBytes,
+      maxStorageBytes: defaultPlan.maxStorageBytes + bonusStorageBytes,
       maxMembersPerProject: defaultPlan.maxMembersPerProject,
       planExpiresAt: null,
       source: "default-plan",
@@ -68,6 +69,7 @@ export async function resolvePlanLimitsForUser(userId: string): Promise<Resolved
     planId: null,
     planName: "Free",
     ...DEFAULT_PLAN_LIMITS,
+    maxStorageBytes: DEFAULT_PLAN_LIMITS.maxStorageBytes + bonusStorageBytes,
     planExpiresAt: null,
     source: "hardcoded-fallback",
   };

@@ -9,6 +9,7 @@ import {
   Compass,
   CreditCard,
   FolderKanban,
+  Gift,
   KeyRound,
   LayoutDashboard,
   LayoutTemplate,
@@ -64,6 +65,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "Account",
     items: [
+      { name: "Referrals", href: "/dashboard/referrals", icon: Gift },
       { name: "Plans", href: "/dashboard/plans", icon: CreditCard },
       { name: "Guide", href: "/dashboard/guide", icon: Compass },
       { name: "Settings", href: "/dashboard/settings", icon: Settings },

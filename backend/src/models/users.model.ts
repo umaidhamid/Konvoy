@@ -91,6 +91,27 @@ const userSchema = new mongoose.Schema(
     type: Boolean,
     default: true,
   },
+
+  // Referral program
+  referralCode: {
+    type: String,
+    unique: true,
+    sparse: true,
+    index: true,
+  },
+
+  referredBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    default: null,
+  },
+
+  // Rewarded once, when the referred user verifies their email - stacks on
+  // top of maxStorageBytes from resolvePlanLimitsForUser, on both sides of a referral.
+  bonusStorageBytes: {
+    type: Number,
+    default: 0,
+  },
 },
 {
   timestamps: true,

@@ -32,6 +32,7 @@ import { config } from "../../config.js";
 import { AuthRequest } from "../../middlewares/auth.middleware.js";
 import { describeUserAgent } from "../../utils/userAgent.js";
 import { Resend } from "resend";
+import { referralService } from "../referrals/referral.service.js";
 
 const resend = new Resend(config.resendApiKey);
 export const login = async (req: Request, res: Response) => {
@@ -246,7 +247,7 @@ export const logout = async (req: Request, res: Response) => {
 
 export const register = async (req: Request, res: Response) => {
   try {
-    const { fullname, phoneNumber, email, password } = req.body;
+    const { fullname, phoneNumber, email, password, referralCode } = req.body;
     const normalizedEmail = String(email).trim().toLowerCase();
 
     const existingUser = await User.findOne({ email: normalizedEmail });
@@ -265,6 +266,7 @@ export const register = async (req: Request, res: Response) => {
     const verificationTokenExpiresAt = new Date(
       Date.now() + 24 * 60 * 60 * 1000, // 24 hours
     );
+    const referredBy = await referralService.resolveReferrer(referralCode);
 
     const user = await User.create({
       fullname,
@@ -278,6 +280,7 @@ export const register = async (req: Request, res: Response) => {
         used: false,
       },
       isVerified: false,
+      referredBy,
     });
 
     const verificationLink = `${config.FRONTEND_URL}/verify?token=${verificationToken}&email=${normalizedEmail}`;
@@ -877,6 +880,7 @@ export const verifyAccount = async (req: Request, res: Response) => {
     user.verificationTokenExpiresAt = undefined;
 
     await user.save();
+    await referralService.grantReferralReward(String(user._id));
     await resend.events.send({
       event: "welcome_mail",
       email: user.email!,

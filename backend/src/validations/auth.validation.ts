@@ -66,6 +66,8 @@ export const loginSchema = z.object({
 /*                                  REGISTER                                  */
 /* -------------------------------------------------------------------------- */
 
+const referralCode = z.string().trim().max(20).optional();
+
 export const registerSchema = z.object({
   body: z
     .object({
@@ -73,6 +75,7 @@ export const registerSchema = z.object({
       email,
       password,
       phoneNumber,
+      referralCode,
     })
     .strict(),
 });

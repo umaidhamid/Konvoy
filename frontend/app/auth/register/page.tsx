@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, Terminal, Shield, Share2, Code2 } from "lucide-react";
 import { toast } from "sonner";
 import { authService } from "@/services/auth.service";
@@ -18,8 +18,18 @@ import { FormField, FIELDS } from "@/components/auth/register-field";
 import { RecoveryModal } from "@/components/auth/recovery-modal";
 
 export default function RegisterPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegisterForm />
+    </Suspense>
+  );
+}
+
+function RegisterForm() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const referralCode = searchParams.get("ref") || undefined;
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -49,7 +59,8 @@ export default function RegisterPage() {
         formData.fullName,
         formData.phone,
         formData.email,
-        formData.password
+        formData.password,
+        referralCode
       );
       setRecoveryData({
         recoveryCode: response.user.recoveryCode || "RC-XXXX-YYYY",
