@@ -18,7 +18,14 @@ export interface ResolvedPlanLimits {
   planName: string;
   maxFileSizeBytes: number;
   maxProjectsPerUser: number;
+  // Total storage cap = planStorageBytes + bonusStorageBytes. Kept as the single
+  // number everything else (quota checks) enforces against.
   maxStorageBytes: number;
+  // Broken out so the UI can show "X basic (referrals) + Y plan" instead of one
+  // opaque total - bonusStorageBytes lives on the User record, independent of
+  // whichever plan branch resolved below.
+  planStorageBytes: number;
+  bonusStorageBytes: number;
   maxMembersPerProject: number;
   planExpiresAt: Date | null;
   source: "user" | "default-plan" | "hardcoded-fallback";
@@ -41,6 +48,8 @@ export async function resolvePlanLimitsForUser(userId: string): Promise<Resolved
       maxFileSizeBytes: assignedPlan.maxFileSizeBytes,
       maxProjectsPerUser: assignedPlan.maxProjectsPerUser,
       maxStorageBytes: assignedPlan.maxStorageBytes + bonusStorageBytes,
+      planStorageBytes: assignedPlan.maxStorageBytes,
+      bonusStorageBytes,
       maxMembersPerProject: assignedPlan.maxMembersPerProject,
       planExpiresAt: user?.planExpiresAt || null,
       source: "user",
@@ -55,6 +64,8 @@ export async function resolvePlanLimitsForUser(userId: string): Promise<Resolved
       maxFileSizeBytes: defaultPlan.maxFileSizeBytes,
       maxProjectsPerUser: defaultPlan.maxProjectsPerUser,
       maxStorageBytes: defaultPlan.maxStorageBytes + bonusStorageBytes,
+      planStorageBytes: defaultPlan.maxStorageBytes,
+      bonusStorageBytes,
       maxMembersPerProject: defaultPlan.maxMembersPerProject,
       planExpiresAt: null,
       source: "default-plan",
@@ -66,6 +77,8 @@ export async function resolvePlanLimitsForUser(userId: string): Promise<Resolved
     planName: "Free",
     ...DEFAULT_PLAN_LIMITS,
     maxStorageBytes: DEFAULT_PLAN_LIMITS.maxStorageBytes + bonusStorageBytes,
+    planStorageBytes: DEFAULT_PLAN_LIMITS.maxStorageBytes,
+    bonusStorageBytes,
     planExpiresAt: null,
     source: "hardcoded-fallback",
   };

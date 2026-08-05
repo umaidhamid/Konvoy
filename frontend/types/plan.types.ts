@@ -29,7 +29,10 @@ export interface AdminPlan extends Plan {
 export interface PlanLimits {
   maxFileSizeBytes: number;
   maxProjectsPerUser: number;
+  // Total storage cap = planStorageBytes + bonusStorageBytes.
   maxStorageBytes: number;
+  planStorageBytes: number;
+  bonusStorageBytes: number;
   maxMembersPerProject: number;
 }
 
@@ -42,6 +45,7 @@ export interface MyPlanResponse {
     projectCount: number;
     storageUsedBytes: number;
   };
+  isOverStorageQuota: boolean;
 }
 
 export type PlanFormValues = Pick<

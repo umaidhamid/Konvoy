@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { secretService } from "./secret.service.js";
 import { JwtPayload } from "../../types/auth.js";
+import { ACCESS_TOKEN_COOKIE_NAME } from "../../config/auth.config.js";
 
 const handleError = (res: Response, error: unknown) => {
   const status = (error as any)?.statusCode || 500;
@@ -14,7 +15,7 @@ const handleError = (res: Response, error: unknown) => {
 // undefined when there's no valid session, same as being logged out.
 const getOptionalUserId = (req: Request): string | undefined => {
   try {
-    let accessToken = (req as any).cookies?.accessToken;
+    let accessToken = (req as any).cookies?.[ACCESS_TOKEN_COOKIE_NAME];
     if (!accessToken) {
       const authHeader = req.headers.authorization;
       if (authHeader?.startsWith("Bearer ")) accessToken = authHeader.split(" ")[1];

@@ -1,10 +1,11 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, Terminal, Shield, Share2, Code2 } from "lucide-react";
 import { toast } from "sonner";
 import { authService } from "@/services/auth.service";
+import { useAuth } from "@/hooks/useAuth";
 
 import { Button } from "@/components/ui/button";
 
@@ -30,6 +31,13 @@ function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const referralCode = searchParams.get("ref") || undefined;
+  const { loading: authLoading, isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      router.replace("/dashboard");
+    }
+  }, [authLoading, isAuthenticated, router]);
 
   const [formData, setFormData] = useState({
     fullName: "",

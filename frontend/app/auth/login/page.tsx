@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Terminal, Shield, Share2, Code2 } from "lucide-react";
 import { toast } from "sonner";
@@ -26,7 +26,13 @@ export default function LoginPage() {
     password: "",
   });
   const [rememberMe, setRememberMe] = useState(true);
-  const { setUser,user } = useAuth();
+  const { setUser, loading: authLoading, isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      router.replace("/dashboard");
+    }
+  }, [authLoading, isAuthenticated, router]);
 
   const cardRef = useRef<HTMLDivElement>(null);
   const [mousePos, setMousePos] = useState({ x: 50, y: 50 });

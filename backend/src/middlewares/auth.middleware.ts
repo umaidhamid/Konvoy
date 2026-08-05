@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { JwtPayload } from "../types/auth.js";
+import { ACCESS_TOKEN_COOKIE_NAME } from "../config/auth.config.js";
 export interface AuthRequest extends Request {
   user?: JwtPayload;
 }
@@ -10,7 +11,7 @@ export const authMiddleware = (
   next: NextFunction,
 ) => {
   try {
-    let accessToken = req.cookies.accessToken;
+    let accessToken = req.cookies[ACCESS_TOKEN_COOKIE_NAME];
  if (!accessToken) {
       const authHeader = req.headers.authorization;
 

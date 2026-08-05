@@ -26,6 +26,8 @@ import { hashPassword, comparePassword } from "../../utils/password.js";
 import {
   ACCESS_TOKEN_COOKIE_OPTIONS,
   REFRESH_TOKEN_COOKIE_OPTIONS,
+  ACCESS_TOKEN_COOKIE_NAME,
+  REFRESH_TOKEN_COOKIE_NAME,
   SESSION_EXPIRES_MS,
 } from "../../config/auth.config.js";
 import { config } from "../../config.js";
@@ -95,8 +97,8 @@ export const login = async (req: Request, res: Response) => {
       ip: req.ip || "",
     });
 
-    res.cookie("accessToken", accessToken, ACCESS_TOKEN_COOKIE_OPTIONS);
-    res.cookie("refreshToken", refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
+    res.cookie(ACCESS_TOKEN_COOKIE_NAME, accessToken, ACCESS_TOKEN_COOKIE_OPTIONS);
+    res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
 
     user.lastLoginAt = new Date();
     await user.save();
@@ -122,7 +124,7 @@ export const login = async (req: Request, res: Response) => {
 
 export const refresh = async (req: Request, res: Response) => {
   try {
-    const refreshToken = req.cookies.refreshToken;
+    const refreshToken = req.cookies[REFRESH_TOKEN_COOKIE_NAME];
 
     if (!refreshToken) {
       return res.status(401).json({
@@ -140,8 +142,8 @@ export const refresh = async (req: Request, res: Response) => {
       ) as JwtPayload;
     } catch (err) {
       // Clean up the stale cookie regardless of which JWT error this is
-      res.clearCookie("accessToken", ACCESS_TOKEN_COOKIE_OPTIONS);
-      res.clearCookie("refreshToken", REFRESH_TOKEN_COOKIE_OPTIONS);
+      res.clearCookie(ACCESS_TOKEN_COOKIE_NAME, ACCESS_TOKEN_COOKIE_OPTIONS);
+      res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_OPTIONS);
 
       if (err instanceof jwt.TokenExpiredError) {
         return res.status(401).json({
@@ -162,8 +164,8 @@ export const refresh = async (req: Request, res: Response) => {
     });
 
     if (!session) {
-      res.clearCookie("accessToken", ACCESS_TOKEN_COOKIE_OPTIONS);
-      res.clearCookie("refreshToken", REFRESH_TOKEN_COOKIE_OPTIONS);
+      res.clearCookie(ACCESS_TOKEN_COOKIE_NAME, ACCESS_TOKEN_COOKIE_OPTIONS);
+      res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_OPTIONS);
       return res.status(401).json({
         success: false,
         code: "INVALID_REFRESH_TOKEN",
@@ -175,8 +177,8 @@ export const refresh = async (req: Request, res: Response) => {
     // hasn't expired yet (defensive check in case TTLs drift).
     if (session.expiresAt.getTime() < Date.now()) {
       await Session.deleteOne({ _id: session._id });
-      res.clearCookie("accessToken", ACCESS_TOKEN_COOKIE_OPTIONS);
-      res.clearCookie("refreshToken", REFRESH_TOKEN_COOKIE_OPTIONS);
+      res.clearCookie(ACCESS_TOKEN_COOKIE_NAME, ACCESS_TOKEN_COOKIE_OPTIONS);
+      res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_OPTIONS);
       return res.status(401).json({
         success: false,
         code: "REFRESH_TOKEN_EXPIRED",
@@ -208,8 +210,8 @@ export const refresh = async (req: Request, res: Response) => {
       role: decoded.role,
     });
 
-    res.cookie("accessToken", newAccessToken, ACCESS_TOKEN_COOKIE_OPTIONS);
-    res.cookie("refreshToken", newRefreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
+    res.cookie(ACCESS_TOKEN_COOKIE_NAME, newAccessToken, ACCESS_TOKEN_COOKIE_OPTIONS);
+    res.cookie(REFRESH_TOKEN_COOKIE_NAME, newRefreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
 
     return res.status(200).json({
       success: true,
@@ -225,15 +227,15 @@ export const refresh = async (req: Request, res: Response) => {
 
 export const logout = async (req: Request, res: Response) => {
   try {
-    const refreshToken = req.cookies.refreshToken;
+    const refreshToken = req.cookies[REFRESH_TOKEN_COOKIE_NAME];
     if (refreshToken) {
       await Session.deleteOne({
         tokenHash: hashToken(refreshToken),
       });
     }
 
-    res.clearCookie("accessToken", ACCESS_TOKEN_COOKIE_OPTIONS);
-    res.clearCookie("refreshToken", REFRESH_TOKEN_COOKIE_OPTIONS);
+    res.clearCookie(ACCESS_TOKEN_COOKIE_NAME, ACCESS_TOKEN_COOKIE_OPTIONS);
+    res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_OPTIONS);
 
     return res.status(200).json({
       success: true,
@@ -1048,7 +1050,7 @@ export const resetPassword = async (req: Request, res: Response) => {
 // GET /auth/sessions - every device currently signed into this account
 export const getSessions = async (req: AuthRequest, res: Response) => {
   try {
-    const currentTokenHash = req.cookies.refreshToken ? hashToken(req.cookies.refreshToken) : null;
+    const currentTokenHash = req.cookies[REFRESH_TOKEN_COOKIE_NAME] ? hashToken(req.cookies[REFRESH_TOKEN_COOKIE_NAME]) : null;
 
     const sessions = await Session.find({ userId: req.user?.userId })
       .select("userAgent ip createdAt updatedAt tokenHash")
@@ -1075,7 +1077,7 @@ export const getSessions = async (req: AuthRequest, res: Response) => {
 export const revokeSession = async (req: AuthRequest, res: Response) => {
   try {
     const { sessionId } = req.params;
-    const currentTokenHash = req.cookies.refreshToken ? hashToken(req.cookies.refreshToken) : null;
+    const currentTokenHash = req.cookies[REFRESH_TOKEN_COOKIE_NAME] ? hashToken(req.cookies[REFRESH_TOKEN_COOKIE_NAME]) : null;
 
     const session = await Session.findOne({ _id: sessionId, userId: req.user?.userId });
     if (!session) {
@@ -1097,7 +1099,7 @@ export const revokeSession = async (req: AuthRequest, res: Response) => {
 // DELETE /auth/sessions - sign out of every device except this one
 export const revokeOtherSessions = async (req: AuthRequest, res: Response) => {
   try {
-    const currentTokenHash = req.cookies.refreshToken ? hashToken(req.cookies.refreshToken) : null;
+    const currentTokenHash = req.cookies[REFRESH_TOKEN_COOKIE_NAME] ? hashToken(req.cookies[REFRESH_TOKEN_COOKIE_NAME]) : null;
 
     const result = await Session.deleteMany({
       userId: req.user?.userId,

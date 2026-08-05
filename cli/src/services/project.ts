@@ -1,9 +1,9 @@
-import config from "./config.js";
+import config, { ACCESS_TOKEN_KEY } from "./config.js";
 import { createApi } from "./api.js";
 
 export async function createProject(name: string, description?: string) {
   const domain = config.get("domain") as string;
-  const token = config.get("accessToken") as string;
+  const token = config.get(ACCESS_TOKEN_KEY) as string;
 
   const api = createApi(domain);
 
@@ -22,7 +22,7 @@ export async function createProject(name: string, description?: string) {
 
 export async function deleteProject(projectId: string) {
   const domain = config.get("domain") as string;
-  const token = config.get("accessToken") as string;
+  const token = config.get(ACCESS_TOKEN_KEY) as string;
 
   const api = createApi(domain);
 
@@ -37,7 +37,7 @@ export async function deleteProject(projectId: string) {
 
 export async function deleteProjectFile(fileId: string) {
   const domain = config.get("domain") as string;
-  const token = config.get("accessToken") as string;
+  const token = config.get(ACCESS_TOKEN_KEY) as string;
 
   const api = createApi(domain);
 
@@ -52,7 +52,7 @@ export async function deleteProjectFile(fileId: string) {
 
 export async function createProjectFile(slug: string, name: string) {
   const domain = config.get("domain") as string;
-  const token = config.get("accessToken") as string;
+  const token = config.get(ACCESS_TOKEN_KEY) as string;
 
   const api = createApi(domain);
 
@@ -71,7 +71,7 @@ export async function createProjectFile(slug: string, name: string) {
 
 export async function updateProjectFileContent(fileId: string, content: string) {
   const domain = config.get("domain") as string;
-  const token = config.get("accessToken") as string;
+  const token = config.get(ACCESS_TOKEN_KEY) as string;
 
   const api = createApi(domain);
 
@@ -91,7 +91,7 @@ export async function updateProjectFileContent(fileId: string, content: string) 
 export async function getProjects() {
 
     const domain = config.get("domain") as string;
-    const token = config.get("accessToken") as string;
+    const token = config.get(ACCESS_TOKEN_KEY) as string;
     const api = createApi(domain);
 
     const { data } = await api.get("/projects/users-projects", {
@@ -104,7 +104,7 @@ export async function getProjects() {
 }
 export async function connectProject(projectId: string) {
   const domain = config.get("domain") as string;
-  const token = config.get("accessToken") as string;
+  const token = config.get(ACCESS_TOKEN_KEY) as string;
 
   const api = createApi(domain);
 
@@ -122,7 +122,7 @@ export async function connectProject(projectId: string) {
 }
 export async function getProjectFiles(slug: string) {
   const domain = config.get("domain") as string;
-  const token = config.get("accessToken") as string;
+  const token = config.get(ACCESS_TOKEN_KEY) as string;
 
   const api = createApi(domain);
 
@@ -141,7 +141,7 @@ export async function addProjectMember(
   fileIds?: string[]
 ) {
   const domain = config.get("domain") as string;
-  const token = config.get("accessToken") as string;
+  const token = config.get(ACCESS_TOKEN_KEY) as string;
 
   const api = createApi(domain);
 
@@ -160,7 +160,7 @@ export async function addProjectMember(
 
 export async function leaveProject(projectId: string) {
   const domain = config.get("domain") as string;
-  const token = config.get("accessToken") as string;
+  const token = config.get(ACCESS_TOKEN_KEY) as string;
 
   const api = createApi(domain);
 
@@ -179,7 +179,7 @@ export async function leaveProject(projectId: string) {
 
 export async function getProjectFileContent(fileId: string) {
   const domain = config.get("domain") as string;
-  const token = config.get("accessToken") as string;
+  const token = config.get(ACCESS_TOKEN_KEY) as string;
 
   const api = createApi(domain);
 

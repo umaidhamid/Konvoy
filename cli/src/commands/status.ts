@@ -1,11 +1,11 @@
 import chalk from "chalk";
 
-import config from "../services/config.js";
+import config, { ACCESS_TOKEN_KEY } from "../services/config.js";
 import { whoAmI } from "../services/auth.js";
 
 export async function statusCommand() {
   const domain = config.get("domain") as string | undefined;
-  const accessToken = config.get("accessToken") as string | undefined;
+  const accessToken = config.get(ACCESS_TOKEN_KEY) as string | undefined;
 
   if (!domain || !accessToken) {
     console.log(chalk.yellow("Not logged in. Run `konvoy login` first."));

@@ -28,12 +28,19 @@ export const getMyPlan = async (req: any, res: any) => {
           maxFileSizeBytes: limits.maxFileSizeBytes,
           maxProjectsPerUser: limits.maxProjectsPerUser,
           maxStorageBytes: limits.maxStorageBytes,
+          planStorageBytes: limits.planStorageBytes,
+          bonusStorageBytes: limits.bonusStorageBytes,
           maxMembersPerProject: limits.maxMembersPerProject,
         },
         usage: {
           projectCount,
           storageUsedBytes,
         },
+        // True once actual usage exceeds the cap - can happen after a plan
+        // expires and falls back to a smaller default/hardcoded limit. Writes
+        // that would grow usage further are blocked server-side either way;
+        // this just lets the UI warn before that happens.
+        isOverStorageQuota: storageUsedBytes > limits.maxStorageBytes,
       },
     });
   } catch (error: any) {
