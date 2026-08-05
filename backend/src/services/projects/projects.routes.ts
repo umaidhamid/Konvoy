@@ -14,6 +14,7 @@ import {
   leaveProject,
   togglePinProject,
 } from "./projects.controller.js";
+import { getProjectActivity } from "../activity/activity.controller.js";
 
 const projectRouter = express.Router();
 
@@ -27,4 +28,5 @@ projectRouter.post("/:projectId/members", authMiddleware, addProjectMember);
 projectRouter.delete("/:projectId/members/:memberId", authMiddleware, removeProjectMember);
 projectRouter.post("/:projectId/leave", authMiddleware, leaveProject);
 projectRouter.post("/:projectId/pin", authMiddleware, togglePinProject);
+projectRouter.get("/:projectId/activity", authMiddleware, getProjectActivity);
 export default projectRouter;
