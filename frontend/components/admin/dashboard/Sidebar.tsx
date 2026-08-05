@@ -10,6 +10,7 @@ import {
   CreditCard,
   FolderKanban,
   Gift,
+  GitCompare,
   KeyRound,
   LayoutDashboard,
   LayoutTemplate,
@@ -59,6 +60,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Security",
     items: [
       { name: "Secrets", href: "/dashboard/secrets", icon: KeyRound },
+      { name: "Diff Share", href: "/dashboard/diff-share", icon: GitCompare },
       // { name: "Sessions", href: "/dashboard/security", icon: Monitor },
     ],
   },
