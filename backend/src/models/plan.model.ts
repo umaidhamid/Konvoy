@@ -12,7 +12,6 @@ export interface IPlan extends mongoose.Document {
   description: string;
   features: string[];
   maxFileSizeBytes: number;
-  maxFilesPerProject: number;
   maxProjectsPerUser: number;
   maxStorageBytes: number;
   maxMembersPerProject: number;
@@ -37,7 +36,6 @@ const planSchema = new mongoose.Schema<IPlan>(
     description: { type: String, default: "", trim: true },
     features: { type: [String], default: [] },
     maxFileSizeBytes: { type: Number, required: true, min: 1 },
-    maxFilesPerProject: { type: Number, required: true, min: 1 },
     maxProjectsPerUser: { type: Number, required: true, min: 1 },
     maxStorageBytes: { type: Number, required: true, min: 1 },
     maxMembersPerProject: { type: Number, required: true, min: 1 },

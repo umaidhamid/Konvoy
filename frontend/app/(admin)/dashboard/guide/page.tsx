@@ -133,7 +133,6 @@ export default function GuidePage() {
             <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-2 text-sm text-foreground">
               <li>Plan: <span className="font-medium">{planName}</span></li>
               <li>Up to {limits.maxProjectsPerUser} projects</li>
-              <li>Up to {limits.maxFilesPerProject} files per project</li>
               <li>Up to {limits.maxMembersPerProject} teammates per project</li>
               <li>Up to {formatBytes(limits.maxFileSizeBytes)} per file</li>
               <li>Up to {formatBytes(limits.maxStorageBytes)} total storage</li>

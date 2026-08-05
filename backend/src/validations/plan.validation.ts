@@ -16,7 +16,6 @@ const planBody = z.object({
     .int()
     .positive("Max file size must be greater than 0")
     .max(MAX_ALLOWED_FILE_SIZE_BYTES, "Max file size can't exceed the server's request size limit"),
-  maxFilesPerProject: z.number().int().positive("Max files per project must be greater than 0"),
   maxProjectsPerUser: z.number().int().positive("Max projects per user must be greater than 0"),
   maxStorageBytes: z.number().int().positive("Max storage must be greater than 0"),
   maxMembersPerProject: z.number().int().positive("Max members per project must be greater than 0"),

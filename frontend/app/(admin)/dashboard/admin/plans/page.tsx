@@ -155,7 +155,7 @@ export default function AdminPlansPage() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {formatBytes(p.maxFileSizeBytes)}/file · {p.maxFilesPerProject} files/project ·{" "}
+                      {formatBytes(p.maxFileSizeBytes)}/file ·{" "}
                       {p.maxMembersPerProject} members/project · {p.maxProjectsPerUser} projects ·{" "}
                       {formatBytes(p.maxStorageBytes)} storage
                     </td>

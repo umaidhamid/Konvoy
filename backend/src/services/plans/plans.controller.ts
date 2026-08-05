@@ -26,7 +26,6 @@ export const getMyPlan = async (req: any, res: any) => {
         currentPlanExpiresAt: limits.planExpiresAt,
         currentPlanLimits: {
           maxFileSizeBytes: limits.maxFileSizeBytes,
-          maxFilesPerProject: limits.maxFilesPerProject,
           maxProjectsPerUser: limits.maxProjectsPerUser,
           maxStorageBytes: limits.maxStorageBytes,
           maxMembersPerProject: limits.maxMembersPerProject,

@@ -257,8 +257,7 @@ export default function ProjectsPage() {
                         {formatBytes(project.sizeBytes ?? 0)} stored
                       </span>
                       <span className="text-[10px] font-medium px-2 py-1 rounded-md bg-secondary text-secondary-foreground">
-                        {project.fileCount ?? 0}
-                        {project.limits ? ` / ${project.limits.maxFilesPerProject}` : ""} files
+                        {project.fileCount ?? 0} files
                       </span>
                       <span className="text-[10px] font-medium px-2 py-1 rounded-md bg-secondary text-secondary-foreground">
                         {project.memberCount ?? 0}

@@ -10,10 +10,9 @@ import { PlanStatusCard } from "@/components/dashboard/PlanStatusCard";
 import { formatBytes } from "@/lib/formatBytes";
 import { getAllDurations, getDisplayPrice } from "@/lib/planPricing";
 
-function limitBullets(limits: PlanLimits) {
+function limitBullets(limits: Pick<PlanLimits, "maxProjectsPerUser" | "maxMembersPerProject" | "maxFileSizeBytes" | "maxStorageBytes">) {
   return [
     `Up to ${limits.maxProjectsPerUser} projects`,
-    `Up to ${limits.maxFilesPerProject} files per project`,
     `Up to ${limits.maxMembersPerProject} teammates per project`,
     `Up to ${formatBytes(limits.maxFileSizeBytes)} per file`,
     `Up to ${formatBytes(limits.maxStorageBytes)} total storage`,

@@ -91,14 +91,14 @@ export const getProjects = async (req: any, res: any) => {
     ]);
     const fileStatsByProject = new Map(fileStats.map((f: any) => [String(f._id), f]));
 
-    // Files/members limits are scoped to the project OWNER's plan (not the viewer's),
+    // Members limit is scoped to the project OWNER's plan (not the viewer's),
     // same reasoning as enforcement - resolve once per unique owner, not per project.
     const ownerIds = [...new Set(projects.map((p) => String(p.userId)))];
     const limitsByOwner = new Map(
       await Promise.all(
         ownerIds.map(async (ownerId) => {
-          const { maxFilesPerProject, maxMembersPerProject } = await resolvePlanLimitsForUser(ownerId);
-          return [ownerId, { maxFilesPerProject, maxMembersPerProject }] as const;
+          const { maxMembersPerProject } = await resolvePlanLimitsForUser(ownerId);
+          return [ownerId, { maxMembersPerProject }] as const;
         })
       )
     );

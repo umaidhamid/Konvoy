@@ -15,7 +15,7 @@ export interface Project {
   fileCount?: number;
   sizeBytes?: number;
   memberCount?: number;
-  limits?: { maxFilesPerProject: number; maxMembersPerProject: number };
+  limits?: { maxMembersPerProject: number };
 }
 export interface ProjectData {
   _id: string;

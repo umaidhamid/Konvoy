@@ -11,7 +11,6 @@ export interface Plan {
   description: string;
   features: string[];
   maxFileSizeBytes: number;
-  maxFilesPerProject: number;
   maxProjectsPerUser: number;
   maxStorageBytes: number;
   maxMembersPerProject: number;
@@ -29,7 +28,6 @@ export interface AdminPlan extends Plan {
 
 export interface PlanLimits {
   maxFileSizeBytes: number;
-  maxFilesPerProject: number;
   maxProjectsPerUser: number;
   maxStorageBytes: number;
   maxMembersPerProject: number;
@@ -54,7 +52,6 @@ export type PlanFormValues = Pick<
   | "description"
   | "features"
   | "maxFileSizeBytes"
-  | "maxFilesPerProject"
   | "maxProjectsPerUser"
   | "maxStorageBytes"
   | "maxMembersPerProject"

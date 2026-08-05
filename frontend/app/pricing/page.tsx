@@ -75,7 +75,6 @@ export default function PublicPricingPage() {
               {plans.map((plan) => {
                 const bullets = [
                   `Up to ${plan.maxProjectsPerUser} projects`,
-                  `Up to ${plan.maxFilesPerProject} files per project`,
                   `Up to ${plan.maxMembersPerProject} teammates per project`,
                   `Up to ${formatBytes(plan.maxFileSizeBytes)} per file`,
                   `Up to ${formatBytes(plan.maxStorageBytes)} total storage`,

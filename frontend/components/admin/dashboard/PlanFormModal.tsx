@@ -27,7 +27,6 @@ export function PlanFormModal({ plan, submitting, onSubmit, onClose }: PlanFormM
   const [description, setDescription] = useState(plan?.description ?? "");
   const [features, setFeatures] = useState((plan?.features ?? []).join("\n"));
   const [maxFileSizeMb, setMaxFileSizeMb] = useState(String(plan ? bytesToMb(plan.maxFileSizeBytes) : 2));
-  const [maxFilesPerProject, setMaxFilesPerProject] = useState(String(plan?.maxFilesPerProject ?? 20));
   const [maxProjectsPerUser, setMaxProjectsPerUser] = useState(String(plan?.maxProjectsPerUser ?? 20));
   const [maxStorageMb, setMaxStorageMb] = useState(String(plan ? bytesToMb(plan.maxStorageBytes) : 500));
   const [maxMembersPerProject, setMaxMembersPerProject] = useState(String(plan?.maxMembersPerProject ?? 5));
@@ -48,14 +47,12 @@ export function PlanFormModal({ plan, submitting, onSubmit, onClose }: PlanFormM
     setError("");
 
     const mb = parseFloat(maxFileSizeMb);
-    const filesPerProject = parseInt(maxFilesPerProject, 10);
     const projectsPerUser = parseInt(maxProjectsPerUser, 10);
     const storageMb = parseFloat(maxStorageMb);
     const membersPerProject = parseInt(maxMembersPerProject, 10);
 
     if (!name.trim()) return setError("Plan name is required.");
     if (!mb || mb <= 0) return setError("Max file size must be greater than 0.");
-    if (!filesPerProject || filesPerProject <= 0) return setError("Max files per project must be greater than 0.");
     if (!projectsPerUser || projectsPerUser <= 0) return setError("Max projects per user must be greater than 0.");
     if (!storageMb || storageMb <= 0) return setError("Max storage must be greater than 0.");
     if (!membersPerProject || membersPerProject <= 0) return setError("Max members per project must be greater than 0.");
@@ -75,7 +72,6 @@ export function PlanFormModal({ plan, submitting, onSubmit, onClose }: PlanFormM
         .map((f) => f.trim())
         .filter(Boolean),
       maxFileSizeBytes: Math.round(mb * 1024 * 1024),
-      maxFilesPerProject: filesPerProject,
       maxProjectsPerUser: projectsPerUser,
       maxStorageBytes: Math.round(storageMb * 1024 * 1024),
       maxMembersPerProject: membersPerProject,
@@ -167,17 +163,6 @@ export function PlanFormModal({ plan, submitting, onSubmit, onClose }: PlanFormM
                 step="1"
                 value={maxStorageMb}
                 onChange={(e) => setMaxStorageMb(e.target.value)}
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>Files / project</label>
-              <input
-                type="number"
-                min="1"
-                step="1"
-                value={maxFilesPerProject}
-                onChange={(e) => setMaxFilesPerProject(e.target.value)}
                 className={inputClass}
               />
             </div>

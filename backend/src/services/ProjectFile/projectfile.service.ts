@@ -95,17 +95,6 @@ export const projectFileService = {
     });
     if (existing) throw new AppError("A file with this name already exists", 409);
 
-    // File-count cap is scoped to the project OWNER's plan, not the acting member's -
-    // otherwise a lower-tier teammate could get blocked inside someone else's larger project.
-    const { maxFilesPerProject } = await resolvePlanLimitsForUser(String(project.userId));
-    const existingFileCount = await ProjectFile.countDocuments({
-      projectId: project._id,
-      isDeleted: false,
-    });
-    if (existingFileCount >= maxFilesPerProject) {
-      throw new AppError(`This project has reached its limit of ${maxFilesPerProject} files.`, 403);
-    }
-
     const file = await ProjectFile.create({
       projectId: project._id,
       userId,

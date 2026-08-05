@@ -8,7 +8,6 @@ import ProjectFile from "../../models/ProjectFile.model.js";
 // as it did before this feature existed.
 export const DEFAULT_PLAN_LIMITS = {
   maxFileSizeBytes: 2 * 1024 * 1024, // matches the old MAX_FILE_CONTENT_BYTES constant
-  maxFilesPerProject: 500, // no prior constant existed - generous placeholder, tune per real usage
   maxProjectsPerUser: 20, // matches the old MAX_PROJECTS_PER_USER constant
   maxStorageBytes: 500 * 1024 * 1024, // no prior constant existed - generous placeholder, tune per real usage
   maxMembersPerProject: 5, // no prior constant existed - generous placeholder, tune per real usage
@@ -18,7 +17,6 @@ export interface ResolvedPlanLimits {
   planId: string | null;
   planName: string;
   maxFileSizeBytes: number;
-  maxFilesPerProject: number;
   maxProjectsPerUser: number;
   maxStorageBytes: number;
   maxMembersPerProject: number;
@@ -41,7 +39,6 @@ export async function resolvePlanLimitsForUser(userId: string): Promise<Resolved
       planId: String(assignedPlan._id),
       planName: assignedPlan.name,
       maxFileSizeBytes: assignedPlan.maxFileSizeBytes,
-      maxFilesPerProject: assignedPlan.maxFilesPerProject,
       maxProjectsPerUser: assignedPlan.maxProjectsPerUser,
       maxStorageBytes: assignedPlan.maxStorageBytes + bonusStorageBytes,
       maxMembersPerProject: assignedPlan.maxMembersPerProject,
@@ -56,7 +53,6 @@ export async function resolvePlanLimitsForUser(userId: string): Promise<Resolved
       planId: String(defaultPlan._id),
       planName: defaultPlan.name,
       maxFileSizeBytes: defaultPlan.maxFileSizeBytes,
-      maxFilesPerProject: defaultPlan.maxFilesPerProject,
       maxProjectsPerUser: defaultPlan.maxProjectsPerUser,
       maxStorageBytes: defaultPlan.maxStorageBytes + bonusStorageBytes,
       maxMembersPerProject: defaultPlan.maxMembersPerProject,
@@ -81,7 +77,7 @@ export async function getActivePlans() {
 
 // Total plaintext bytes stored across every non-deleted file in every project
 // OWNED by this user (not projects they're merely a member of) - storage is an
-// account-wide quota, billed to whoever owns the project, same as maxFilesPerProject.
+// account-wide quota, billed to whoever owns the project.
 export async function getAccountStorageUsedBytes(ownerId: string): Promise<number> {
   const ownedProjects = await Project.find({ userId: ownerId }).select("_id");
   const projectIds = ownedProjects.map((p) => p._id);
