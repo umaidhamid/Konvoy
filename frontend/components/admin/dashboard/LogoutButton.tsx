@@ -15,9 +15,9 @@ export default function LogoutButton() {
           toast.error("Failed to log out. Please try again.");
           return;
         }
-        router.push("/login");
+        router.push("/auth/login");
       }}
-      className="px-4 py-2 text-sm text-muted hover:text-foreground transition-colors"
+      className="px-4 py-2  text-red-900 hover:text-red-900 font-bold transition-colors"
     >
       Logout
     </button>
