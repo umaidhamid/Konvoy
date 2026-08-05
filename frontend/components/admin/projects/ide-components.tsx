@@ -1,8 +1,8 @@
-import React from "react";
-import Editor from "@monaco-editor/react";
+import React, { useEffect, useState } from "react";
+import Editor, { DiffEditor } from "@monaco-editor/react";
 import {
   Loader2, ArrowLeft, Search, FileCode, Plus, Trash2, Edit2,
-  ChevronRight, Sparkles, FolderOpen, History, X, RotateCcw, Clock
+  ChevronRight, Sparkles, FolderOpen, History, X, RotateCcw, Clock, GitCompare
 } from "lucide-react";
 import { ProjectFile, Project, FileVersions } from "@/types/projectfile.types";
 import { FileContent, getLanguageFromFilename, getFileIcon, getLangColor } from "@/utils/ide-utils";
@@ -77,6 +77,8 @@ function versionTimeAgo(dateString?: string) {
   return `${days}d ago`;
 }
 
+type VersionRow = { key: string; label: string; sub: string; content: string; restoreIndex: number | null };
+
 export const IDEVersionHistory = ({
   open,
   onClose,
@@ -94,6 +96,8 @@ export const IDEVersionHistory = ({
   restoringIndex: number | null;
   onRestore: (index: number) => void;
 }) => {
+  const [compareRow, setCompareRow] = useState<VersionRow | null>(null);
+
   if (!open) return null;
 
   const currentContent = versions?.current.content ?? "";
@@ -115,7 +119,7 @@ export const IDEVersionHistory = ({
       content: v.content,
       restoreIndex: i,
     })),
-  ].filter(Boolean) as { key: string; label: string; sub: string; content: string; restoreIndex: number | null }[];
+  ].filter(Boolean) as VersionRow[];
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
@@ -133,7 +137,7 @@ export const IDEVersionHistory = ({
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={() => { setCompareRow(null); onClose(); }}
             className="p-1.5 rounded-md text-zinc-500 hover:text-white hover:bg-white/6 transition-colors"
           >
             <X size={16} />
@@ -200,19 +204,29 @@ export const IDEVersionHistory = ({
                           )}
                         </div>
                         {!isCurrent && (
-                          <button
-                            onClick={() => onRestore(row.restoreIndex as number)}
-                            disabled={restoringIndex !== null || identical}
-                            title={identical ? "Same content as current version" : "Restore this version"}
-                            className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-md bg-white/6 text-zinc-200 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
-                          >
-                            {restoringIndex === row.restoreIndex ? (
-                              <Loader2 size={11} className="animate-spin" />
-                            ) : (
-                              <RotateCcw size={11} />
-                            )}
-                            Restore
-                          </button>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              onClick={() => setCompareRow(row)}
+                              title="Compare with current version"
+                              className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-md bg-white/6 text-zinc-200 hover:bg-white/10 transition-colors"
+                            >
+                              <GitCompare size={11} />
+                              Compare
+                            </button>
+                            <button
+                              onClick={() => onRestore(row.restoreIndex as number)}
+                              disabled={restoringIndex !== null || identical}
+                              title={identical ? "Same content as current version" : "Restore this version"}
+                              className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-md bg-white/6 text-zinc-200 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            >
+                              {restoringIndex === row.restoreIndex ? (
+                                <Loader2 size={11} className="animate-spin" />
+                              ) : (
+                                <RotateCcw size={11} />
+                              )}
+                              Restore
+                            </button>
+                          </div>
                         )}
                       </div>
                       <pre className="text-[11px] leading-relaxed text-zinc-400 bg-black/30 rounded-lg p-2.5 max-h-28 overflow-hidden whitespace-pre-wrap break-all font-mono">
@@ -225,6 +239,120 @@ export const IDEVersionHistory = ({
               })}
             </div>
           )}
+        </div>
+      </div>
+
+      {compareRow && (
+        <IDEDiffModal
+          fileName={fileName}
+          original={compareRow}
+          modified={rows.find((r) => r.restoreIndex === null) || null}
+          onClose={() => setCompareRow(null)}
+          onRestore={
+            compareRow.restoreIndex !== null
+              ? () => {
+                  onRestore(compareRow.restoreIndex as number);
+                  setCompareRow(null);
+                }
+              : undefined
+          }
+          restoring={restoringIndex === compareRow.restoreIndex}
+        />
+      )}
+    </div>
+  );
+};
+
+// --- Version Diff Modal ---
+export const IDEDiffModal = ({
+  fileName,
+  original,
+  modified,
+  onClose,
+  onRestore,
+  restoring,
+}: {
+  fileName?: string;
+  original: VersionRow;
+  modified: VersionRow | null;
+  onClose: () => void;
+  onRestore?: () => void;
+  restoring?: boolean;
+}) => {
+  const [sideBySide, setSideBySide] = useState(true);
+  const identical = original.content === (modified?.content ?? "");
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm p-6 animate-in fade-in duration-150">
+      <div className="w-full max-w-5xl h-full max-h-[85vh] bg-[#0e0e10] border border-white/10 rounded-xl shadow-2xl shadow-black/60 flex flex-col overflow-hidden animate-in zoom-in-95 duration-150">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/6 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
+              <GitCompare size={14} className="text-blue-400" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold text-white truncate">
+                {original.label} <span className="text-zinc-600">vs</span> {modified?.label ?? "Current version"}
+              </h3>
+              <p className="text-[11px] text-zinc-500 truncate">
+                {fileName} {identical && "· identical — no changes"}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setSideBySide((v) => !v)}
+              className="px-2.5 py-1 text-[11px] font-medium rounded-md bg-white/6 text-zinc-200 hover:bg-white/10 transition-colors"
+            >
+              {sideBySide ? "Inline view" : "Side-by-side view"}
+            </button>
+            {onRestore && (
+              <button
+                onClick={onRestore}
+                disabled={restoring || identical}
+                title={identical ? "Same content as current version" : "Restore this version"}
+                className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-md bg-white/6 text-zinc-200 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                {restoring ? <Loader2 size={11} className="animate-spin" /> : <RotateCcw size={11} />}
+                Restore this version
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-md text-zinc-500 hover:text-white hover:bg-white/6 transition-colors"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 min-h-0">
+          <DiffEditor
+            theme="vs-dark"
+            language={getLanguageFromFilename(fileName || "")}
+            original={original.content}
+            modified={modified?.content ?? ""}
+            options={{
+              readOnly: true,
+              renderSideBySide: sideBySide,
+              minimap: { enabled: false },
+              fontSize: 13,
+              scrollBeyondLastLine: false,
+            }}
+            loading={
+              <div className="h-full flex items-center justify-center">
+                <Loader2 className="animate-spin text-zinc-600" size={20} />
+              </div>
+            }
+          />
         </div>
       </div>
     </div>
