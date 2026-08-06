@@ -51,16 +51,25 @@ const normalizePrefix = (prefix: string) => {
   return withLeadingSlash;
 };
 
-const validateCredentials = (creds: AwsPushCredentials) => {
-  if (!REGION_PATTERN.test(creds.region)) {
+// Trims and validates in one pass - the frontend already trims before sending, but this is the
+// only guarantee for anyone calling the API directly. Untrimmed values previously either failed
+// validation on otherwise-correct credentials (a trailing newline from a pasted key) or got sent
+// to AWS as-is.
+const normalizeAndValidateCredentials = (creds: AwsPushCredentials): AwsPushCredentials => {
+  const region = creds.region.trim();
+  const accessKeyId = creds.accessKeyId.trim();
+  const secretAccessKey = creds.secretAccessKey.trim();
+
+  if (!REGION_PATTERN.test(region)) {
     throw new AppError('That doesn\'t look like a valid AWS region (e.g. "us-east-1")', 400);
   }
-  if (!/^[A-Z0-9]{16,128}$/.test(creds.accessKeyId)) {
+  if (!/^[A-Z0-9]{16,128}$/.test(accessKeyId)) {
     throw new AppError("That access key ID doesn't look valid - it should be an uppercase alphanumeric string", 400);
   }
-  if (creds.secretAccessKey.trim().length < 20) {
+  if (secretAccessKey.length < 20) {
     throw new AppError("That secret access key looks too short to be valid", 400);
   }
+  return { region, accessKeyId, secretAccessKey };
 };
 
 export const awsPushService = {
@@ -86,11 +95,11 @@ export const awsPushService = {
       throw new AppError(`This file has more than ${MAX_KEYS_PER_PUSH} keys - split it before pushing`, 400);
     }
 
-    validateCredentials(creds);
+    const normalizedCreds = normalizeAndValidateCredentials(creds);
     const normalizedPrefix = normalizePrefix(prefix);
     const client = new SSMClient({
-      region: creds.region,
-      credentials: { accessKeyId: creds.accessKeyId, secretAccessKey: creds.secretAccessKey },
+      region: normalizedCreds.region,
+      credentials: { accessKeyId: normalizedCreds.accessKeyId, secretAccessKey: normalizedCreds.secretAccessKey },
     });
 
     const results: AwsPushKeyResult[] = [];
