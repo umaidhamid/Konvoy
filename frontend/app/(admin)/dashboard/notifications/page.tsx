@@ -8,6 +8,7 @@ import {
   Bell,
   CreditCard,
   FolderKanban,
+  HardDrive,
   KeyRound,
   Megaphone,
   ShieldAlert,
@@ -37,6 +38,7 @@ function iconForType(type: string) {
   if (type === "account_deactivated") return ShieldAlert;
   if (type === "account_reactivated" || type === "role_changed") return ShieldCheck;
   if (type === "plan_changed") return CreditCard;
+  if (type === "storage_granted" || type === "referral_reward") return HardDrive;
   if (type === "secret_viewed") return KeyRound;
   if (type === "announcement") return Megaphone;
   return Bell;

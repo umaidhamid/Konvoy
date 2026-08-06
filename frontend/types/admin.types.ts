@@ -18,6 +18,7 @@ export interface AdminUser {
   createdAt: string;
   planId: { _id: string; name: string } | null;
   planExpiresAt: string | null;
+  bonusStorageBytes: number;
 }
 
 export interface AdminLog {

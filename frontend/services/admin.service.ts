@@ -45,6 +45,12 @@ export const adminService = {
     });
     return response.data;
   },
+  setUserBonusStorage: async (userId: string, bonusStorageBytes: number) => {
+    const response = await api.patch<ApiResponse<AdminUser>>(`${baseUrl}/users/${userId}/storage`, {
+      bonusStorageBytes,
+    });
+    return response.data;
+  },
   getAllProjects: async (page = 1, limit = 20, search = "") => {
     const response = await api.get<Paginated<AdminProject[]>>(`${baseUrl}/projects`, {
       params: { page, limit, search: search || undefined },

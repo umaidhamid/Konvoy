@@ -15,6 +15,7 @@ export type NotificationType =
   | "plan_changed"
   | "secret_viewed"
   | "referral_reward"
+  | "storage_granted"
   | "announcement";
 
 export interface INotification extends mongoose.Document {

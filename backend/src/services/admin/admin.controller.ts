@@ -51,7 +51,7 @@ export const getAllUsers = async (req: any, res: any) => {
 
     const [users, total] = await Promise.all([
       User.find(filter)
-        .select("fullname email role isVerified isDeactivated deactivationNote profileImage lastLoginAt createdAt planId planExpiresAt")
+        .select("fullname email role isVerified isDeactivated deactivationNote profileImage lastLoginAt createdAt planId planExpiresAt bonusStorageBytes")
         .populate("planId", "name")
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
@@ -767,6 +767,59 @@ export const setUserPlan = async (req: any, res: any) => {
       success: false,
       message: error.message || "Something went wrong.",
     });
+  }
+};
+
+// Sanity cap on what an admin can grant a single user in one go - catches a fat-fingered
+// extra zero before it silently blows a user's storage quota up to something absurd.
+const MAX_ADMIN_BONUS_STORAGE_BYTES = 100 * 1024 * 1024 * 1024; // 100GB
+
+// PATCH /admin/users/:userId/storage - sets (not adds to) the user's bonus storage
+// allowance, the same bonusStorageBytes field the referral program stacks on top of
+// their plan's storage cap (see resolvePlanLimitsForUser). Setting it here overwrites
+// whatever value is there, including any referral-earned bonus.
+export const setUserBonusStorage = async (req: any, res: any) => {
+  try {
+    const { userId } = req.params;
+    const { bonusStorageBytes } = req.body;
+
+    if (typeof bonusStorageBytes !== "number" || !Number.isFinite(bonusStorageBytes) || bonusStorageBytes < 0) {
+      return res.status(400).json({ success: false, message: "bonusStorageBytes must be a non-negative number." });
+    }
+    if (bonusStorageBytes > MAX_ADMIN_BONUS_STORAGE_BYTES) {
+      return res.status(400).json({
+        success: false,
+        message: `That's more than the ${MAX_ADMIN_BONUS_STORAGE_BYTES / (1024 * 1024 * 1024)}GB cap for a single grant.`,
+      });
+    }
+
+    const user = await User.findByIdAndUpdate(userId, { bonusStorageBytes }, { new: true }).select(
+      "email fullname bonusStorageBytes"
+    );
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found." });
+    }
+
+    if (bonusStorageBytes > 0) {
+      await notify(
+        user._id.toString(),
+        "storage_granted",
+        `An administrator granted you ${(bonusStorageBytes / (1024 * 1024)).toFixed(0)}MB of bonus storage.`
+      );
+    }
+
+    logAdminAction(
+      req.user.userId,
+      "user_storage_granted",
+      "user",
+      user._id.toString(),
+      `Set ${user.email}'s bonus storage to ${(bonusStorageBytes / (1024 * 1024)).toFixed(0)}MB.`
+    );
+
+    return res.status(200).json({ success: true, message: "Bonus storage updated.", data: user });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message || "Something went wrong." });
   }
 };
 

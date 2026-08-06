@@ -21,6 +21,7 @@ import {
   updatePlan,
   deletePlan,
   setUserPlan,
+  setUserBonusStorage,
   getContactQueries,
   setContactQueryRead,
   getBroadcastAudienceCount,
@@ -40,6 +41,7 @@ adminRouter.patch("/users/bulk-deactivate", bulkSetUserDeactivation);
 adminRouter.patch("/users/:userId/deactivate", setUserDeactivation);
 adminRouter.patch("/users/:userId/role", setUserRole);
 adminRouter.patch("/users/:userId/plan", setUserPlan);
+adminRouter.patch("/users/:userId/storage", setUserBonusStorage);
 adminRouter.get("/projects", getAllProjects);
 adminRouter.get("/projects/export", exportProjectsCsv);
 adminRouter.delete("/projects/bulk", bulkDeleteProjects);

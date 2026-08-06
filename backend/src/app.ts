@@ -17,6 +17,7 @@ import referralRoutes from "./services/referrals/referral.routes.js";
 import diffShareRoutes from "./services/diffShare/diffShare.routes.js";
 import dataExportRoutes from "./services/dataExport/dataExport.routes.js";
 import envDriftRoutes from "./services/envDrift/envDrift.routes.js";
+import awsPushRoutes from "./services/awsPush/awsPush.routes.js";
 const app = express();
 
 app.use(
@@ -54,6 +55,7 @@ app.use("/api/v1/referrals", referralRoutes);
 app.use("/api/v1/diff-shares", diffShareRoutes);
 app.use("/api/v1/data-export", dataExportRoutes);
 app.use("/api/v1/env-drift", envDriftRoutes);
+app.use("/api/v1/aws-push", awsPushRoutes);
 
 app.use(
   (err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

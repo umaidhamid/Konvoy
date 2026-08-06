@@ -8,6 +8,7 @@ import { adminService } from "@/services/admin.service";
 import { AdminUser } from "@/types/admin.types";
 import { Pager } from "@/components/admin/dashboard/Pager";
 import { PlanAssignmentCell } from "@/components/admin/dashboard/PlanAssignmentCell";
+import { StorageOverrideCell } from "@/components/admin/dashboard/StorageOverrideCell";
 import { timeAgo, isExpired } from "@/lib/adminFormat";
 
 const ROLES: AdminUser["role"][] = ["user", "moderator", "admin"];
@@ -97,6 +98,16 @@ export default function AdminUsersPage() {
     onError: (err: any) => toast.error(err?.response?.data?.message || "Could not update plan."),
   });
 
+  const storageMutation = useMutation({
+    mutationFn: ({ userId, bonusStorageBytes }: { userId: string; bonusStorageBytes: number }) =>
+      adminService.setUserBonusStorage(userId, bonusStorageBytes),
+    onSuccess: () => {
+      invalidateAfterUserChange();
+      toast.success("Bonus storage updated");
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message || "Could not update storage."),
+  });
+
   const handleToggleDeactivate = (u: AdminUser) => {
     const deactivating = !u.isDeactivated;
     const note = deactivating ? window.prompt(`Reason for deactivating ${u.email} (optional):`) || "" : "";
@@ -123,6 +134,11 @@ export default function AdminUsersPage() {
   const handlePlanChange = (u: AdminUser, planId: string | null, durationMonths?: number) => {
     if (planId === (u.planId?._id ?? null) && durationMonths === undefined) return;
     planMutation.mutate({ userId: u._id, planId, durationMonths });
+  };
+
+  const handleStorageChange = (u: AdminUser, bonusStorageBytes: number) => {
+    if (bonusStorageBytes === (u.bonusStorageBytes || 0)) return;
+    storageMutation.mutate({ userId: u._id, bonusStorageBytes });
   };
 
   const toggleUserSelected = (id: string) => {
@@ -220,6 +236,7 @@ export default function AdminUsersPage() {
                 <th className="text-left font-medium px-4 py-3">Role</th>
                 <th className="text-left font-medium px-4 py-3">Plan</th>
                 <th className="text-left font-medium px-4 py-3">Plan expires</th>
+                <th className="text-left font-medium px-4 py-3">Bonus storage</th>
                 <th className="text-left font-medium px-4 py-3">Status</th>
                 <th className="text-left font-medium px-4 py-3">Last login</th>
                 <th className="text-left font-medium px-4 py-3">Joined</th>
@@ -229,7 +246,7 @@ export default function AdminUsersPage() {
             <tbody className="divide-y divide-border">
               {users.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">
                     No users found.
                   </td>
                 </tr>
@@ -285,6 +302,13 @@ export default function AdminUsersPage() {
                         ) : (
                           <span className="text-muted-foreground">{new Date(u.planExpiresAt).toLocaleDateString()}</span>
                         )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <StorageOverrideCell
+                          user={u}
+                          busy={storageMutation.isPending && storageMutation.variables?.userId === u._id}
+                          onSave={(bonusStorageBytes) => handleStorageChange(u, bonusStorageBytes)}
+                        />
                       </td>
                       <td className="px-4 py-3">
                         {u.isDeactivated ? (

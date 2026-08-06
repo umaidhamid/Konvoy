@@ -1,7 +1,9 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import { FolderKanban, Gauge, HardDrive, Users } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { adminService } from "@/services/admin.service";
 import { formatBytes } from "@/lib/formatBytes";
@@ -37,16 +39,37 @@ export default function AdminOverviewPage() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Total Users", value: stats?.totalUsers ?? "—" },
-          { label: "Total Projects", value: stats?.totalProjects ?? "—" },
-          { label: "Total Files", value: stats?.totalFiles ?? "—" },
-          { label: "Storage Used", value: stats ? formatBytes(stats.totalSizeBytes) : "—" },
-        ].map((stat, idx) => (
-          <div key={idx} className="bg-card border border-border p-5 rounded-lg">
-            <span className="text-xs font-medium text-muted-foreground">{stat.label}</span>
-            <div className="mt-2 text-2xl font-semibold tracking-tight">{stat.value}</div>
-          </div>
-        ))}
+          { label: "Total Users", value: stats?.totalUsers ?? "—", icon: Users, href: "/dashboard/admin/users" },
+          { label: "Total Projects", value: stats?.totalProjects ?? "—", icon: FolderKanban, href: "/dashboard/admin/projects" },
+          { label: "Total Files", value: stats?.totalFiles ?? "—", icon: Gauge, href: null },
+          { label: "Storage Used", value: stats ? formatBytes(stats.totalSizeBytes) : "—", icon: HardDrive, href: null },
+        ].map((stat, idx) => {
+          const Icon = stat.icon;
+          const content = (
+            <>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-muted-foreground">{stat.label}</span>
+                <div className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                  <Icon className="w-3.5 h-3.5 text-primary" />
+                </div>
+              </div>
+              <div className="mt-2 text-2xl font-semibold tracking-tight">{stat.value}</div>
+            </>
+          );
+          return stat.href ? (
+            <Link
+              key={idx}
+              href={stat.href}
+              className="bg-card border border-border p-5 rounded-lg hover:border-primary/40 transition-colors"
+            >
+              {content}
+            </Link>
+          ) : (
+            <div key={idx} className="bg-card border border-border p-5 rounded-lg">
+              {content}
+            </div>
+          );
+        })}
       </div>
 
       <div className="border border-border rounded-lg overflow-hidden">

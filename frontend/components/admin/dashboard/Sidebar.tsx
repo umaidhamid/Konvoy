@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
   Bell,
+  Cloud,
   Compass,
   CreditCard,
   DatabaseBackup,
@@ -28,6 +29,10 @@ import { notificationsService } from "@/services/notifications.service";
 
 interface SidebarProps {
   className?: string;
+  /** "mobile" renders as a full-height drawer instead of the sticky desktop rail. */
+  variant?: "desktop" | "mobile";
+  /** Called after a nav link is clicked - used to close the mobile drawer. */
+  onNavigate?: () => void;
 }
 
 interface NavItem {
@@ -41,7 +46,7 @@ interface NavGroup {
   items: NavItem[];
 }
 
-const NAV_GROUPS: NavGroup[] = [
+export const NAV_GROUPS: NavGroup[] = [
   {
     items: [
       { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
@@ -64,6 +69,7 @@ const NAV_GROUPS: NavGroup[] = [
       { name: "Secrets", href: "/dashboard/secrets", icon: KeyRound },
       { name: "Diff Share", href: "/dashboard/diff-share", icon: GitCompare },
       { name: "Env Drift", href: "/dashboard/env-drift", icon: Scale },
+      { name: "AWS Push", href: "/dashboard/aws-push", icon: Cloud },
       // { name: "Sessions", href: "/dashboard/security", icon: Monitor },
     ],
   },
@@ -79,12 +85,30 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-const ADMIN_GROUP: NavGroup = {
+export const ADMIN_GROUP: NavGroup = {
   label: "Admin",
   items: [{ name: "Admin", href: "/dashboard/admin", icon: ShieldCheck }],
 };
 
-export default function Sidebar({ className = "" }: SidebarProps) {
+const isItemActive = (pathname: string, href: string) =>
+  href === "/dashboard" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+
+// Longest-matching href wins, so e.g. /dashboard/admin/users still labels itself "Admin"
+// rather than falling through to nothing.
+export function getActiveNavLabel(pathname: string, isAdmin: boolean): string {
+  const groups = isAdmin ? [...NAV_GROUPS, ADMIN_GROUP] : NAV_GROUPS;
+  let best: { name: string; href: string } | null = null;
+  for (const group of groups) {
+    for (const item of group.items) {
+      if (isItemActive(pathname, item.href) && (!best || item.href.length > best.href.length)) {
+        best = item;
+      }
+    }
+  }
+  return best?.name ?? "Overview";
+}
+
+export default function Sidebar({ className = "", variant = "desktop", onNavigate }: SidebarProps) {
   const pathname = usePathname();
   const { user } = useContext(AuthContext);
   const displayName = user?.fullname || user?.email || "Account";
@@ -99,9 +123,14 @@ export default function Sidebar({ className = "" }: SidebarProps) {
   });
   const unreadCount = unreadQuery.data?.unreadCount ?? 0;
 
+  const layoutClass =
+    variant === "mobile"
+      ? "w-72 max-w-[85vw] h-full flex"
+      : "w-56 h-screen sticky top-0 hidden md:flex shrink-0";
+
   return (
     <aside
-      className={`w-56 border-r border-sidebar-border bg-sidebar text-sidebar-foreground flex flex-col shrink-0 h-screen sticky top-0 hidden md:flex ${className}`}
+      className={`border-r border-sidebar-border bg-sidebar text-sidebar-foreground flex-col ${layoutClass} ${className}`}
     >
       {/* Brand Header with dynamic Primary accent */}
       <div className="h-14 border-b border-sidebar-border flex items-center px-6 shrink-0">
@@ -122,14 +151,14 @@ export default function Sidebar({ className = "" }: SidebarProps) {
             <div className="space-y-0.5">
               {group.items.map((item) => {
                 const Icon = item.icon;
-                const isActive =
-                  item.href === "/dashboard" ? pathname === item.href : pathname === item.href || pathname.startsWith(`${item.href}/`);
+                const isActive = isItemActive(pathname, item.href);
                 const badge = item.href === "/dashboard/notifications" ? unreadCount : 0;
 
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
+                    onClick={onNavigate}
                     className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group ${
                       isActive
                         ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm shadow-primary/10"
@@ -161,6 +190,7 @@ export default function Sidebar({ className = "" }: SidebarProps) {
       {/* User Footer Context */}
       <Link
         href="/dashboard/settings"
+        onClick={onNavigate}
         className="p-4 border-t border-sidebar-border flex items-center gap-3 bg-sidebar-accent/40 hover:bg-sidebar-accent transition-colors shrink-0"
       >
         {user?.profileImage ? (
