@@ -3,8 +3,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { DiffEditor } from "@monaco-editor/react";
-import { Clock3, Copy, Eye, GitCompare, Layers, Loader2, ShieldAlert, ShieldX } from "lucide-react";
-import { Navbar } from "@/components/client/navbar";
+import { ArrowRight, Clock3, Copy, Eye, GitCompare, Layers, Loader2, ShieldAlert, ShieldX } from "lucide-react";
+import { BrandMark } from "@/components/auth/brand-mark";
 import { diffShareService } from "@/services/diffShare.service";
 import { DiffShareContent } from "@/types/diffShare.types";
 
@@ -48,8 +48,20 @@ export default function ShareDiffPage() {
 
   return (
     <main className="h-screen w-full bg-background text-foreground antialiased flex flex-col overflow-hidden">
-      <Navbar />
-      <div className="flex-1 min-h-0 pt-20 pb-4 px-4 flex flex-col">
+      <header className="shrink-0 border-b border-border bg-background">
+        <div className="w-full max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+          <a href="/" className="shrink-0 scale-90 origin-left">
+            <BrandMark />
+          </a>
+          <a
+            href="/auth/register"
+            className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition"
+          >
+            Create your own diff link <ArrowRight className="w-3 h-3" />
+          </a>
+        </div>
+      </header>
+      <div className="flex-1 min-h-0 pt-4 pb-4 px-4 flex flex-col">
         <div className="w-full max-w-6xl mx-auto flex-1 min-h-0 flex flex-col">
           {loading ? (
             <div className="flex-1 flex flex-col items-center justify-center gap-3">
