@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AdminUser } from "@/types/admin.types";
 import { formatBytes } from "@/lib/formatBytes";
 
@@ -20,6 +20,21 @@ export function StorageOverrideCell({
   const currentMb = Math.round((user.bonusStorageBytes || 0) / MB);
   const [editing, setEditing] = useState(false);
   const [valueMb, setValueMb] = useState(String(currentMb));
+  const submittedMbRef = useRef<number | null>(null);
+  const wasBusyRef = useRef(false);
+
+  // Only collapse back to the read-only view once the save actually lands - if the request
+  // failed, `currentMb` won't match what we submitted, so stay open with the value intact
+  // instead of silently reverting and losing what the admin typed.
+  useEffect(() => {
+    if (wasBusyRef.current && !busy && submittedMbRef.current !== null) {
+      if (currentMb === submittedMbRef.current) {
+        setEditing(false);
+      }
+      submittedMbRef.current = null;
+    }
+    wasBusyRef.current = busy;
+  }, [busy, currentMb]);
 
   const parsed = Number(valueMb);
   const isValid = valueMb.trim() !== "" && Number.isFinite(parsed) && parsed >= 0;
@@ -36,8 +51,8 @@ export function StorageOverrideCell({
 
   const save = () => {
     if (!isValid) return;
+    submittedMbRef.current = Math.round(parsed);
     onSave(Math.round(parsed * MB));
-    setEditing(false);
   };
 
   if (!editing) {

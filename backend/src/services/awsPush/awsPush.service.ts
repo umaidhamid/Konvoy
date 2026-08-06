@@ -36,13 +36,16 @@ export interface AwsPushKeyResult {
 const normalizePrefix = (prefix: string) => {
   const trimmed = prefix.trim().replace(/\/+$/, "");
   const withLeadingSlash = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
-  if (!/^\/[a-zA-Z0-9_.\-/]+$/.test(withLeadingSlash)) {
-    throw new AppError("Parameter prefix can only contain letters, numbers, '.', '-', '_' and '/'", 400);
+  // Each '/'-separated segment must be non-empty, so "//" or a leading "/" beyond the first
+  // can't sneak through and produce a malformed parameter name like "/konvoy//prod/KEY".
+  if (!/^\/[a-zA-Z0-9_.\-]+(\/[a-zA-Z0-9_.\-]+)*$/.test(withLeadingSlash)) {
+    throw new AppError("Parameter prefix can only contain letters, numbers, '.', '-', '_' and '/' between non-empty segments", 400);
   }
-  // "aws" and "ssm" are reserved prefixes - AWS rejects every parameter under them, so catch it
-  // up front instead of burning a failed API call per key to discover the same thing.
-  const firstSegment = withLeadingSlash.split("/")[1]?.toLowerCase();
-  if (firstSegment === "aws" || firstSegment === "ssm") {
+  // AWS rejects any parameter name that STARTS WITH "aws" or "ssm" (case-insensitive) in its
+  // first path segment - not just an exact "aws"/"ssm" segment, e.g. "/awsome/x" is rejected too.
+  // Catch it here instead of burning a failed API call per key to discover the same thing.
+  const firstSegment = (withLeadingSlash.split("/")[1] || "").toLowerCase();
+  if (firstSegment.startsWith("aws") || firstSegment.startsWith("ssm")) {
     throw new AppError('Parameter names can\'t start with "aws" or "ssm" - those prefixes are reserved by AWS', 400);
   }
   return withLeadingSlash;
@@ -102,7 +105,7 @@ export const awsPushService = {
       }
 
       try {
-        await client.send(
+        const response = await client.send(
           new PutParameterCommand({
             Name: name,
             Value: map[key],
@@ -110,7 +113,9 @@ export const awsPushService = {
             Overwrite: overwrite,
           })
         );
-        results.push({ key, name, status: overwrite ? "updated" : "created" });
+        // Version 1 means this parameter didn't exist before; the overwrite flag only says
+        // whether we WOULD replace an existing one, not whether this particular key already did.
+        results.push({ key, name, status: response.Version && response.Version > 1 ? "updated" : "created" });
       } catch (error: any) {
         const isAuthError = AUTH_ERROR_NAMES.has(error?.name);
         const message =

@@ -793,6 +793,12 @@ export const setUserBonusStorage = async (req: any, res: any) => {
       });
     }
 
+    const existing = await User.findById(userId).select("email fullname bonusStorageBytes");
+    if (!existing) {
+      return res.status(404).json({ success: false, message: "User not found." });
+    }
+    const previousBytes = existing.bonusStorageBytes || 0;
+
     const user = await User.findByIdAndUpdate(userId, { bonusStorageBytes }, { new: true }).select(
       "email fullname bonusStorageBytes"
     );
@@ -801,11 +807,15 @@ export const setUserBonusStorage = async (req: any, res: any) => {
       return res.status(404).json({ success: false, message: "User not found." });
     }
 
-    if (bonusStorageBytes > 0) {
+    // Only notify on an actual increase - otherwise a reduction (or a same-value re-save)
+    // would tell the user they were "granted" storage when they were really just cut back.
+    if (bonusStorageBytes > previousBytes) {
+      const grantedMb = ((bonusStorageBytes - previousBytes) / (1024 * 1024)).toFixed(0);
+      const totalMb = (bonusStorageBytes / (1024 * 1024)).toFixed(0);
       await notify(
         user._id.toString(),
         "storage_granted",
-        `An administrator granted you ${(bonusStorageBytes / (1024 * 1024)).toFixed(0)}MB of bonus storage.`
+        `An administrator granted you an extra ${grantedMb}MB of bonus storage (${totalMb}MB total).`
       );
     }
 
