@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -74,8 +74,13 @@ export default function AwsPushPage() {
   const currentProject = projects.find((p) => p.slug === projectSlug);
 
   // Auto-pick the only project so single-project accounts don't hit an empty state for no reason.
+  // Only do this once - otherwise a background refetch of `projects` (new array reference, same
+  // data) would re-fire this and silently override a user who deliberately cleared the selector.
+  const didAutoSelectProject = useRef(false);
   useEffect(() => {
+    if (didAutoSelectProject.current) return;
     if (!projectSlug && projects.length === 1 && projects[0].slug) {
+      didAutoSelectProject.current = true;
       setProjectSlug(projects[0].slug);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
