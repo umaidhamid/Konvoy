@@ -17,6 +17,7 @@ import {
   LayoutTemplate,
   Lightbulb,
   Monitor,
+  Scale,
   Search,
   Settings,
   ShieldCheck,
@@ -62,6 +63,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { name: "Secrets", href: "/dashboard/secrets", icon: KeyRound },
       { name: "Diff Share", href: "/dashboard/diff-share", icon: GitCompare },
+      { name: "Env Drift", href: "/dashboard/env-drift", icon: Scale },
       // { name: "Sessions", href: "/dashboard/security", icon: Monitor },
     ],
   },
