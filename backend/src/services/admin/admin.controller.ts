@@ -447,12 +447,21 @@ export const exportUsersCsv = async (req: any, res: any) => {
       : {};
 
     const users = await User.find(filter)
-      .select("fullname email role isVerified isDeactivated lastLoginAt createdAt")
+      .select("fullname email role isVerified isDeactivated lastLoginAt createdAt bonusStorageBytes")
       .sort({ createdAt: -1 });
 
-    const header = ["Full Name", "Email", "Role", "Verified", "Deactivated", "Last Login", "Joined"];
+    const header = ["Full Name", "Email", "Role", "Verified", "Deactivated", "Last Login", "Joined", "Bonus Storage (MB)"];
     const rows = users.map((u) =>
-      [u.fullname, u.email, u.role, u.isVerified, u.isDeactivated, u.lastLoginAt || "", u.createdAt]
+      [
+        u.fullname,
+        u.email,
+        u.role,
+        u.isVerified,
+        u.isDeactivated,
+        u.lastLoginAt || "",
+        u.createdAt,
+        Math.round((u.bonusStorageBytes || 0) / (1024 * 1024)),
+      ]
         .map(csvCell)
         .join(",")
     );
