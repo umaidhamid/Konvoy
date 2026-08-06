@@ -90,7 +90,7 @@ export default function EnvDriftPage() {
     clearResult();
   };
 
-  const runCompare = async (nextReveal: boolean) => {
+  const runCompare = async (nextReveal: boolean, isRefresh = false) => {
     if (!canCompare) return;
     setComparing(true);
     setError("");
@@ -101,7 +101,9 @@ export default function EnvDriftPage() {
     } catch (err: any) {
       const message = err?.response?.data?.message || "Could not compare these files.";
       setError(message);
-      setResult(null);
+      // Only clear a stale result on a fresh compare - a failed "reveal values" refresh
+      // shouldn't wipe out a comparison that was already showing successfully.
+      if (!isRefresh) setResult(null);
       toast.error(message);
     } finally {
       setComparing(false);
@@ -115,7 +117,7 @@ export default function EnvDriftPage() {
 
   const toggleReveal = () => {
     if (!result) return;
-    runCompare(!reveal);
+    runCompare(!reveal, true);
   };
 
   const copyKey = async (key: string) => {
