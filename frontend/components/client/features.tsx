@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Lock, Code2, Terminal, FolderTree, Users, ShieldCheck } from "lucide-react";
+import { Cloud, Code2, FolderTree, GitCompare, Lock, Scale, ShieldCheck, Terminal, Users } from "lucide-react";
 
 const FEATURES = [
   {
@@ -40,6 +40,24 @@ const FEATURES = [
     description:
       "A dedicated admin panel to manage users, roles, plans, and storage across the whole platform — with an audit log of every action taken.",
   },
+  {
+    icon: Scale,
+    title: "Catch config drift before it bites",
+    description:
+      "Compare two env files key by key — see what's missing or changed between staging and production without exposing values unless you ask.",
+  },
+  {
+    icon: Cloud,
+    title: "Push straight to AWS",
+    description:
+      "Send a project's env file into AWS Systems Manager Parameter Store with your own credentials — no copy-pasting into the console.",
+  },
+  {
+    icon: GitCompare,
+    title: "Share a diff, not a screenshot",
+    description:
+      "Paste two versions of a file and get a read-only link with an expiry and a view limit — perfect for a quick config review.",
+  },
 ];
 
 export const Features = () => {
@@ -55,7 +73,7 @@ export const Features = () => {
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {FEATURES.map((feature, index) => (
             <motion.div
               key={feature.title}

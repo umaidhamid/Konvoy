@@ -4,6 +4,8 @@ Konvoy's developer workspace for the config files your projects depend on — fr
 
 Every command that needs a project asks you to pick one fresh each time — there's no "linked folder" concept. Nothing about which project a folder belongs to is ever cached locally.
 
+> Looking for what's new platform-wide (dashboard, admin panel, devops tools)? See [`CHANGELOG.md`](../CHANGELOG.md) at the repo root — this file only covers the CLI itself, which hasn't changed in the most recent round of updates.
+
 ## Setup
 
 ```bash

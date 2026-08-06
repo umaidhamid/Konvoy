@@ -4,20 +4,20 @@ import { motion } from "framer-motion";
 
 const ROADMAP = [
   {
-    title: "Team workspaces",
-    description: "Share a project with teammates instead of copy-pasting secrets into chat.",
-  },
-  {
-    title: "File version history",
-    description: "See what changed in a file and roll back to an earlier version.",
-  },
-  {
     title: "CI/CD tokens",
     description: "Scoped, read-only tokens so a pipeline can pull files without a user login.",
   },
   {
     title: "Secret scanning on upload",
     description: "Flag things that look like leaked keys before they're stored.",
+  },
+  {
+    title: "GCP & Azure secret sync",
+    description: "The same one-click push we built for AWS Parameter Store, for the other major clouds.",
+  },
+  {
+    title: "Two-factor authentication",
+    description: "An extra login step for accounts that want it, on top of email and password.",
   },
 ];
 

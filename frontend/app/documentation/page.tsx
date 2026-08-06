@@ -5,7 +5,7 @@ import {
   LayoutDashboard, ShieldCheck, Menu, X, ArrowRight, Search, ChevronDown,
   Server, Globe, Database, KeyRound, Mail, Clock, Circle, FileJson, FileType,
   Braces, Settings2, HelpCircle, BookOpen, ListChecks, PlugZap, CreditCard,
-  History, Users, MessageSquare,
+  History, Users, MessageSquare, Cloud, GitCompare, HardDrive, Scale,
 } from "lucide-react";
 import { BrandMark } from "@/components/auth/brand-mark";
 
@@ -38,6 +38,16 @@ const SIDEBAR = [
     ],
   },
   { id: "secrets", label: "Secret Sharing", icon: KeyRound, top: true },
+  {
+    id: "devops",
+    label: "DevOps Tools",
+    icon: Cloud,
+    children: [
+      { id: "devops-diff-share", label: "Diff Share" },
+      { id: "devops-env-drift", label: "Env Drift Check" },
+      { id: "devops-aws-push", label: "AWS Parameter Store" },
+    ],
+  },
   { id: "plans", label: "Plans & Limits", icon: CreditCard, top: true },
   {
     id: "cli",
@@ -136,8 +146,11 @@ const MVP_DONE = [
   "CLI: login, init, add, push, pull, share, leave, delete",
   "Dashboard: projects, files, editor",
   "Secret sharing — expiring, single-use links for passwords and config values",
+  "Diff Share — shareable, read-only diff links with an expiry and view limit",
+  "Env Drift Check — compare two files for missing or changed keys",
+  "Push env files to AWS Systems Manager Parameter Store",
   "Plans & quotas — file size, storage, files/project, members/project, projects/user",
-  "Admin panel — users, projects, plans, contact inbox, activity log",
+  "Admin panel — users, projects, plans, contact inbox, activity log, per-user bonus storage grants",
 ];
 
 const DEFERRED = [
@@ -851,6 +864,62 @@ export default function KonvoyDocs() {
             </p>
           </section>
 
+          {/* DEVOPS TOOLS */}
+          <section id="devops" className="knv-doc-section">
+            <Eyebrow>DevOps Tools</Eyebrow>
+            <h2 className="knv-h2">Built for the config work devops actually does</h2>
+            <p className="knv-lede">
+              Three tools under <strong>Security</strong> in the sidebar for the moment you're comparing
+              environments, catching drift, or getting a config into the infra that needs it.
+            </p>
+
+            <div id="devops-diff-share" className="knv-doc-sub">
+              <h3 className="knv-h3">Diff Share</h3>
+              <p className="knv-p">
+                Paste two versions of any text or config and get a read-only, shareable link with a
+                side-by-side or inline diff — no project or account required to view it. Set an expiry
+                and an optional view limit so the link doesn't outlive the conversation it was made for.
+              </p>
+            </div>
+
+            <div id="devops-env-drift" className="knv-doc-sub">
+              <h3 className="knv-h3">Env Drift Check</h3>
+              <p className="knv-p">
+                Pick two files in a project — say <code>.env.staging</code> and{" "}
+                <code>.env.production</code> — and see exactly which keys are missing on either side or
+                have a different value. Values stay hidden by default; reveal them only when you need to.
+              </p>
+            </div>
+
+            <div id="devops-aws-push" className="knv-doc-sub">
+              <h3 className="knv-h3">AWS Parameter Store</h3>
+              <p className="knv-p">
+                Push a project's <code>KEY=VALUE</code> file straight into AWS Systems Manager Parameter
+                Store as <code>SecureString</code> (or plain <code>String</code>) parameters under a
+                prefix you choose. Your AWS credentials are used for that one request only — never
+                stored, logged, or reused.
+              </p>
+            </div>
+
+            <div className="knv-grid-3">
+              <div className="knv-card">
+                <div className="knv-card-icon"><GitCompare size={16} /></div>
+                <h4>Diff Share</h4>
+                <p>Read-only diff links with an expiry and view limit.</p>
+              </div>
+              <div className="knv-card">
+                <div className="knv-card-icon"><Scale size={16} /></div>
+                <h4>Env Drift Check</h4>
+                <p>Missing and changed keys between two files, values hidden by default.</p>
+              </div>
+              <div className="knv-card">
+                <div className="knv-card-icon"><Cloud size={16} /></div>
+                <h4>AWS Parameter Store</h4>
+                <p>One-request push, your own credentials, never stored server-side.</p>
+              </div>
+            </div>
+          </section>
+
           {/* PLANS */}
           <section id="plans" className="knv-doc-section">
             <Eyebrow>Plans & Limits</Eyebrow>
@@ -963,6 +1032,11 @@ export default function KonvoyDocs() {
                 <div className="knv-card-icon"><Users size={16} /></div>
                 <h4>Users</h4>
                 <p>Change roles, deactivate accounts, assign plans, filter by plan status, export to CSV.</p>
+              </div>
+              <div className="knv-card">
+                <div className="knv-card-icon"><HardDrive size={16} /></div>
+                <h4>Bonus storage</h4>
+                <p>Grant or adjust a user's extra storage allowance directly, on top of their plan.</p>
               </div>
               <div className="knv-card">
                 <div className="knv-card-icon"><CreditCard size={16} /></div>
