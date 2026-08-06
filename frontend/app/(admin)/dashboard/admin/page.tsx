@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { FolderKanban, Gauge, HardDrive, Users } from "lucide-react";

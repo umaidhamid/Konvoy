@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { DiffEditor } from "@monaco-editor/react";
 import { ArrowRight, Clock3, Copy, Eye, GitCompare, Layers, Loader2, ShieldAlert, ShieldX } from "lucide-react";
