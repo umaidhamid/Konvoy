@@ -30,6 +30,17 @@ function DashboardChrome({ children }: { children: React.ReactNode }) {
     };
   }, [mobileNavOpen]);
 
+  // Escape closes the drawer, same as clicking the backdrop - standard expectation for any
+  // overlay, and was missing entirely.
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileNavOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [mobileNavOpen]);
+
   const activeLabel = getActiveNavLabel(pathname, user?.role === "admin");
 
   return (
