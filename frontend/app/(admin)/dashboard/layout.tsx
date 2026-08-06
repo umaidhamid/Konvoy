@@ -37,7 +37,9 @@ function DashboardChrome({ children }: { children: React.ReactNode }) {
       <Sidebar />
 
       {mobileNavOpen && (
-        <div className="fixed inset-0 z-40 md:hidden">
+        // Starts below the h-14 header (not inset-0) so the header's own toggle button stays
+        // visible and directly clickable instead of being visually buried under the backdrop.
+        <div className="fixed inset-x-0 top-14 bottom-0 z-40 md:hidden">
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => setMobileNavOpen(false)}
