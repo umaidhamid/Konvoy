@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { AdminPlan, PlanFormValues } from "@/types/plan.types";
 
@@ -41,6 +41,14 @@ export function PlanFormModal({ plan, submitting, onSubmit, onClose }: PlanFormM
   const [isDefault, setIsDefault] = useState(plan?.isDefault ?? false);
   const [isActive, setIsActive] = useState(plan?.isActive ?? true);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
