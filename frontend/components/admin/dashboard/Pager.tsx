@@ -13,6 +13,7 @@ export function Pager({ pagination, onPage }: { pagination: Pagination | null; o
         <button
           onClick={() => onPage(pagination.page - 1)}
           disabled={pagination.page <= 1}
+          aria-label="Previous page"
           className="px-2.5 py-1 rounded bg-secondary text-secondary-foreground disabled:opacity-40 disabled:cursor-not-allowed hover:bg-secondary/70 transition"
         >
           Prev
@@ -20,6 +21,7 @@ export function Pager({ pagination, onPage }: { pagination: Pagination | null; o
         <button
           onClick={() => onPage(pagination.page + 1)}
           disabled={pagination.page >= pagination.pages}
+          aria-label="Next page"
           className="px-2.5 py-1 rounded bg-secondary text-secondary-foreground disabled:opacity-40 disabled:cursor-not-allowed hover:bg-secondary/70 transition"
         >
           Next
