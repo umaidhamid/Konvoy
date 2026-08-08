@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Bell } from "lucide-react";
 import { notificationsService } from "@/services/notifications.service";
 import { Notification } from "@/types/notification.types";
+import { timeAgo } from "@/lib/adminFormat";
 
 export default function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -115,9 +116,7 @@ export default function NotificationBell() {
                   }`}
                 >
                   <p className="text-xs text-foreground leading-relaxed">{n.message}</p>
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    {new Date(n.createdAt).toLocaleString()}
-                  </p>
+                  <p className="text-[10px] text-muted-foreground mt-1">{timeAgo(n.createdAt)}</p>
                 </li>
               ))}
             </ul>
