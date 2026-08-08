@@ -41,6 +41,7 @@ export function PlanAssignmentCell({
       <select
         value={pendingPlanId}
         disabled={busy}
+        aria-label={`Plan for ${user.fullname || user.email}`}
         onChange={(e) => handlePlanSelect(e.target.value)}
         className="text-xs px-2 py-1 rounded-lg bg-secondary text-secondary-foreground border border-border disabled:opacity-50 disabled:cursor-not-allowed"
       >
@@ -58,6 +59,7 @@ export function PlanAssignmentCell({
           <select
             value={pendingDuration ?? pendingPlan.pricingOptions[0].durationMonths}
             disabled={busy}
+            aria-label="Billing duration"
             onChange={(e) => setPendingDuration(parseInt(e.target.value, 10))}
             className="text-xs px-2 py-1 rounded-lg bg-secondary text-secondary-foreground border border-border disabled:opacity-50 disabled:cursor-not-allowed"
           >
