@@ -77,6 +77,7 @@ export function StorageOverrideCell({
         step={1}
         value={valueMb}
         disabled={busy}
+        aria-label="Bonus storage in megabytes"
         onChange={(e) => setValueMb(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === "Enter") save();
