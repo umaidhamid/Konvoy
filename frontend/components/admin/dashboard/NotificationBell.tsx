@@ -104,7 +104,10 @@ export default function NotificationBell() {
           </div>
 
           {notifications.length === 0 ? (
-            <p className="px-4 py-6 text-center text-xs text-muted-foreground">No notifications yet.</p>
+            <div className="flex flex-col items-center gap-2 px-4 py-8 text-center">
+              <Bell className="h-5 w-5 text-muted-foreground/40" />
+              <p className="text-xs text-muted-foreground">No notifications yet.</p>
+            </div>
           ) : (
             <ul>
               {notifications.slice(0, 8).map((n) => (
