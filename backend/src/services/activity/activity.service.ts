@@ -1,9 +1,9 @@
-import ActivityLog from "../../models/activityLog.model.js";
+import ActivityLog, { ActivityAction } from "../../models/activityLog.model.js";
 
 export const logActivity = (
   projectId: string,
   actorId: string,
-  action: string,
+  action: ActivityAction,
   message: string
 ) => {
   ActivityLog.create({ projectId, actorId, action, message }).catch((err) =>
@@ -13,10 +13,11 @@ export const logActivity = (
 
 export const listProjectActivity = async (
   projectId: string,
+  requesterId: string,
   page: number,
   limit: number
 ) => {
-  const [entries, total] = await Promise.all([
+  const [docs, total] = await Promise.all([
     ActivityLog.find({ projectId })
       .populate("actorId", "fullname email")
       .sort({ createdAt: -1 })
@@ -24,5 +25,21 @@ export const listProjectActivity = async (
       .limit(limit),
     ActivityLog.countDocuments({ projectId }),
   ]);
+
+  const entries = docs.map((doc) => {
+    const actor = doc.actorId as any;
+    return {
+      _id: doc._id,
+      projectId: doc.projectId,
+      action: doc.action,
+      message: doc.message,
+      createdAt: doc.createdAt,
+      isMine: String(actor?._id) === String(requesterId),
+      actor: actor?._id
+        ? { _id: actor._id, name: actor.fullname || actor.email }
+        : null,
+    };
+  });
+
   return { entries, total };
 };
