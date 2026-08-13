@@ -485,7 +485,9 @@ export default function ProjectsPage() {
                   </button>
                   {showActivity && (
                     <div className="rounded-lg border border-border bg-background overflow-hidden">
-                      <ActivityFeed entries={activityEntries} loading={activityLoading} />
+                      <div className="max-h-64 overflow-y-auto" aria-live="polite" aria-busy={activityLoading}>
+                        <ActivityFeed entries={activityEntries} loading={activityLoading} />
+                      </div>
                       <ActivityFooter
                         pagination={activityPagination}
                         loadingMore={activityLoadingMore}

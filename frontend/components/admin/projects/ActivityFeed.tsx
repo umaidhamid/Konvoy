@@ -34,7 +34,7 @@ function ActivityRow({ entry }: { entry: ActivityEntry }) {
   const absoluteDate = new Date(entry.createdAt).toLocaleString();
 
   return (
-    <li className="flex items-start gap-3 px-4 py-3">
+    <li role="listitem" className="flex items-start gap-3 px-4 py-3">
       <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-secondary ${meta.color}`}>
         <Icon className="w-4 h-4" />
       </div>
@@ -53,7 +53,7 @@ function ActivityRow({ entry }: { entry: ActivityEntry }) {
 export function ActivityFeed({ entries, loading }: { entries: ActivityEntry[]; loading: boolean }) {
   if (loading) {
     return (
-      <div className="flex justify-center py-10">
+      <div role="status" aria-label="Loading activity" className="flex justify-center py-10">
         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary" />
       </div>
     );
@@ -68,8 +68,10 @@ export function ActivityFeed({ entries, loading }: { entries: ActivityEntry[]; l
     );
   }
 
+  // Tailwind's preflight strips list-style from <ul>, which makes Safari/VoiceOver
+  // drop the implicit list/listitem roles - restore them explicitly.
   return (
-    <ul className="divide-y divide-border">
+    <ul role="list" className="divide-y divide-border">
       {entries.map((entry) => (
         <ActivityRow key={entry._id} entry={entry} />
       ))}
