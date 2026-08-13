@@ -2,6 +2,12 @@
 
 Notable changes to the Konvoy platform (backend, dashboard, and marketing site). The CLI has its own history — see [`cli/README.md`](cli/README.md).
 
+## 2026-08-13
+
+### Added — Projects
+
+- **Project activity feed.** Every project now keeps a running log of what's happened to it — created, updated, members added/removed/left, and files created, renamed, deleted, or restored to a previous version. Open it from the new "Activity" section in a project's Share modal; entries are attributed to "You" or the teammate who did it, paginate with "Load more," and auto-expire after 90 days.
+
 ## 2026-08-07
 
 ### Added — DevOps tools
