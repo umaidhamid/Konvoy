@@ -6,6 +6,7 @@ import ProjectFile from "../../models/ProjectFile.model.js";
 import { AppError } from "../../utils/AppError.js"; // swap for your own error class if different
 import { encrypt, decrypt } from "../../utils/encryption.js";
 import { resolvePlanLimitsForUser, getAccountStorageUsedBytes } from "../plans/plan.service.js";
+import { logActivity } from "../activity/activity.service.js";
 
 const accessFilter = (userId: string) => ({
   $or: [{ userId }, { "members.userId": userId }],
@@ -102,6 +103,8 @@ export const projectFileService = {
       content: encrypt(""),
     });
 
+    logActivity(project._id.toString(), userId, "file_created", `created the file "${file.name}"`);
+
     return file;
   },
 
@@ -184,6 +187,8 @@ export const projectFileService = {
     file.sizeBytes = Buffer.byteLength(decrypt(target.content), "utf8");
     await file.save();
 
+    logActivity(file.projectId.toString(), userId, "file_version_restored", `restored a previous version of "${file.name}"`);
+
     const fileObj = file.toObject();
     fileObj.content = decrypt(file.content);
     return fileObj;
@@ -203,8 +208,12 @@ export const projectFileService = {
     });
     if (duplicate) throw new AppError("A file with this name already exists", 409);
 
+    const previousName = file.name;
     file.name = name;
     await file.save();
+
+    logActivity(file.projectId.toString(), userId, "file_renamed", `renamed "${previousName}" to "${name}"`);
+
     return file;
   },
 
@@ -213,6 +222,9 @@ export const projectFileService = {
 
     file.isDeleted = true;
     await file.save();
+
+    logActivity(file.projectId.toString(), userId, "file_deleted", `deleted the file "${file.name}"`);
+
     return file;
   },
 };
