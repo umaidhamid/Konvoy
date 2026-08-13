@@ -20,7 +20,7 @@ export const getProjectActivity = async (req: any, res: any) => {
       return res.status(404).json({ success: false, message: "Project not found." });
     }
 
-    const { entries, total } = await listProjectActivity(projectId, page, limit);
+    const { entries, total } = await listProjectActivity(projectId, req.user.userId, page, limit);
 
     return res.status(200).json({
       success: true,

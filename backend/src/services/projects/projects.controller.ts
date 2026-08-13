@@ -4,6 +4,7 @@ import ProjectFile from "../../models/ProjectFile.model.js";
 import { sendEmail } from "../../utils/sendEmail.js";
 import { notify } from "../notifications/notification.service.js";
 import { resolvePlanLimitsForUser } from "../plans/plan.service.js";
+import { logActivity } from "../activity/activity.service.js";
 
 const accessFilter = (userId: string) => ({
   $or: [{ userId }, { "members.userId": userId }],
@@ -64,6 +65,7 @@ export const createProject = async (req: any, res: any) => {
     await notify(req.user.userId, "project_created", `You created the project "${project.name}".`, {
       projectId: project._id.toString(),
     });
+    logActivity(project._id.toString(), req.user.userId, "project_created", "created the project");
 
     return res.status(201).json({
       success: true,
@@ -238,6 +240,7 @@ export const updateProject = async (req: any, res: any) => {
         { projectId: project._id.toString() }
       );
     }
+    logActivity(project._id.toString(), req.user.userId, "project_updated", "updated the project details");
 
     return res.status(200).json({
       success: true,
@@ -385,6 +388,12 @@ export const addProjectMember = async (req: any, res: any) => {
       `You added ${user.fullname || user.email} to "${project.name}".`,
       { projectId: project._id.toString() }
     );
+    logActivity(
+      project._id.toString(),
+      req.user.userId,
+      "member_added",
+      `added ${user.fullname || user.email} to the project`
+    );
 
     return res.status(200).json({
       success: true,
@@ -435,6 +444,7 @@ export const removeProjectMember = async (req: any, res: any) => {
       `You removed a member from "${project.name}".`,
       { projectId: project._id.toString() }
     );
+    logActivity(project._id.toString(), req.user.userId, "member_removed", "removed a member from the project");
 
     return res.status(200).json({
       success: true,
@@ -470,6 +480,7 @@ export const leaveProject = async (req: any, res: any) => {
       `${req.user.email || "A member"} left your project "${project.name}".`,
       { projectId: project._id.toString(), actorId: req.user.userId }
     );
+    logActivity(project._id.toString(), req.user.userId, "member_left", "left the project");
 
     return res.status(200).json({
       success: true,

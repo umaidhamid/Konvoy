@@ -1,13 +1,16 @@
 // app/dashboard/projects/page.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { ChevronDown } from "lucide-react";
 import { projectsService } from "@/services/projects.service";
+import { activityService } from "@/services/activity.service";
 import { Project } from "@/types/project.types";
 import { formatBytes } from "@/lib/formatBytes";
+import { ActivityFeed, ActivityFooter } from "@/components/admin/projects/ActivityFeed";
 
 export default function ProjectsPage() {
   const queryClient = useQueryClient();
@@ -25,6 +28,9 @@ export default function ProjectsPage() {
   const [shareError, setShareError] = useState("");
   const [shareSuccess, setShareSuccess] = useState("");
 
+  // Activity feed toggle (inside the share modal)
+  const [showActivity, setShowActivity] = useState(false);
+
   const projectsQuery = useQuery({
     queryKey: ["projects"],
     queryFn: () => projectsService.getProjects(),
@@ -40,6 +46,24 @@ export default function ProjectsPage() {
   });
   const shareProject = shareProjectQuery.data?.data ?? projects.find((p) => p._id === shareProjectId) ?? null;
   const membersLoading = shareProjectQuery.isLoading;
+
+  const activityQuery = useInfiniteQuery({
+    queryKey: ["activity", shareProjectId],
+    queryFn: ({ pageParam }) => activityService.getProjectActivity(shareProjectId as string, pageParam, 20),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination.page < lastPage.pagination.pages ? lastPage.pagination.page + 1 : undefined,
+    enabled: !!shareProjectId && showActivity,
+  });
+
+  useEffect(() => {
+    if (activityQuery.isError) toast.error("Failed to load activity");
+  }, [activityQuery.isError]);
+
+  const activityEntries = activityQuery.data?.pages.flatMap((page) => page.data) ?? [];
+  const activityPagination = activityQuery.data?.pages.at(-1)?.pagination ?? null;
+  const activityLoading = activityQuery.isLoading;
+  const activityLoadingMore = activityQuery.isFetchingNextPage;
 
   const invalidateProjects = () => queryClient.invalidateQueries({ queryKey: ["projects"] });
 
@@ -157,6 +181,7 @@ export default function ProjectsPage() {
     setShareError("");
     setShareSuccess("");
     setShareProjectId(project._id);
+    setShowActivity(false);
   };
 
   const handleShareSubmit = (e: React.FormEvent) => {
@@ -445,6 +470,30 @@ export default function ProjectsPage() {
                     </ul>
                   ) : (
                     <p className="text-xs text-muted-foreground">No members invited yet.</p>
+                  )}
+                </div>
+
+                <div className="mb-5">
+                  <button
+                    type="button"
+                    onClick={() => setShowActivity((v) => !v)}
+                    aria-expanded={showActivity}
+                    className="w-full flex items-center justify-between text-xs font-semibold text-muted-foreground tracking-wider uppercase mb-1.5 hover:text-foreground transition"
+                  >
+                    <span>Activity</span>
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showActivity ? "rotate-180" : ""}`} />
+                  </button>
+                  {showActivity && (
+                    <div className="rounded-lg border border-border bg-background overflow-hidden">
+                      <div className="max-h-64 overflow-y-auto" aria-live="polite" aria-busy={activityLoading}>
+                        <ActivityFeed entries={activityEntries} loading={activityLoading} />
+                      </div>
+                      <ActivityFooter
+                        pagination={activityPagination}
+                        loadingMore={activityLoadingMore}
+                        onLoadMore={() => activityQuery.fetchNextPage()}
+                      />
+                    </div>
                   )}
                 </div>
 
