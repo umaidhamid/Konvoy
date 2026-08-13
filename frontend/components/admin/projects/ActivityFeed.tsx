@@ -13,7 +13,7 @@ import {
   LucideIcon,
 } from "lucide-react";
 import { timeAgo } from "@/lib/adminFormat";
-import { ActivityAction, ActivityEntry } from "@/types/activity.types";
+import { ActivityAction, ActivityEntry, Pagination } from "@/types/activity.types";
 
 const ACTION_META: Record<ActivityAction, { icon: LucideIcon; color: string }> = {
   project_created: { icon: FolderKanban, color: "text-primary" },
@@ -74,5 +74,36 @@ export function ActivityFeed({ entries, loading }: { entries: ActivityEntry[]; l
         <ActivityRow key={entry._id} entry={entry} />
       ))}
     </ul>
+  );
+}
+
+export function ActivityFooter({
+  pagination,
+  loadingMore,
+  onLoadMore,
+}: {
+  pagination: Pagination | null;
+  loadingMore: boolean;
+  onLoadMore: () => void;
+}) {
+  if (!pagination || pagination.total === 0) return null;
+  const hasMore = pagination.page < pagination.pages;
+
+  return (
+    <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+      <span className="text-[11px] text-muted-foreground">
+        {pagination.total} update{pagination.total === 1 ? "" : "s"}
+      </span>
+      {hasMore && (
+        <button
+          type="button"
+          onClick={onLoadMore}
+          disabled={loadingMore}
+          className="text-xs font-medium px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/70 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loadingMore ? "Loading..." : "Load more"}
+        </button>
+      )}
+    </div>
   );
 }
