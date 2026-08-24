@@ -699,6 +699,16 @@ export default function KonvoyDocs() {
               repo somewhere new. It isn't version control, but it does double as a lightweight way to
               hand off a one-off secret — see Secret Sharing below.
             </p>
+            <div className="knv-callout">
+              <FolderKanban size={15} style={{ flexShrink: 0, marginTop: 1 }} />
+              <span>
+                <strong>Why &quot;Konvoy&quot;?</strong> A convoy is a group of vehicles that travels together and
+                arrives together — nothing gets left behind or drifts off on its own. That's the idea:
+                your <code>.env</code> files, editor configs, and every other setting a project depends on
+                move as one synced unit across machines and teammates, instead of scattering. The K is
+                just the brand spelling — there's no acronym behind it.
+              </span>
+            </div>
             <div className="knv-hero-actions">
               <button className="knv-btn-primary" onClick={() => scrollTo("getting-started")}>
                 Get started <ArrowRight size={15} />
