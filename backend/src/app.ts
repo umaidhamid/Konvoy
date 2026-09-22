@@ -18,13 +18,15 @@ import diffShareRoutes from "./services/diffShare/diffShare.routes.js";
 import dataExportRoutes from "./services/dataExport/dataExport.routes.js";
 import envDriftRoutes from "./services/envDrift/envDrift.routes.js";
 import awsPushRoutes from "./services/awsPush/awsPush.routes.js";
+import { Request, Response } from "express";
+
 const app = express();
 
 app.use(
-cors({
-origin: config.FRONTEND_URL,
-credentials: true,
-})
+  cors({
+    origin: config.FRONTEND_URL,
+    credentials: true,
+  })
 );
 
 app.use(morgan("dev"));
@@ -34,11 +36,11 @@ app.use(express.json({ limit: "20mb" }));
 app.use(express.urlencoded({ extended: true, limit: "20mb" }));
 app.use(cookieParser());
 
-app.get("/", (_, res) => {
-res.status(200).json({
-success: true,
-message: "API is running",
-});
+app.get("/api/v1/health", (_: Request, res: Response) => {
+  res.status(200).json({
+    success: true,
+    message: "API is running",
+  });
 });
 
 app.use("/api/v1/auth", authRoutes);
@@ -58,7 +60,7 @@ app.use("/api/v1/env-drift", envDriftRoutes);
 app.use("/api/v1/aws-push", awsPushRoutes);
 
 app.use(
-  (err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  (err: any, _req: Request, res: Response, _next: express.NextFunction) => {
     if (err?.type === "entity.too.large" || err?.status === 413) {
       return res.status(413).json({
         message: "Upload is too large. Please reduce the file size and try again.",
